@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -16,41 +16,74 @@ import {
 import AdminNavbar from "../components/AdminNavbar";
 import { themes } from "../constants/themes";
 
-// Import components
 import AdminWithdrawalsHeader from "./components/AdminWithdrawalsHeader";
 import AdminWithdrawalsStats from "./components/AdminWithdrawalsStats";
 import AdminWithdrawalsFilters from "./components/AdminWithdrawalsFilters";
 import AdminWithdrawalsTable from "./components/AdminWithdrawalsTable";
 import AdminWithdrawalDetailModal from "./components/AdminWithdrawalDetailModal";
 
+const EMPTY_OBJECT = {};
+const EMPTY_ARRAY = [];
+const ALLOWED_LIMITS = [5, 10, 20, 50, 100, 200];
+
 const AdminWithdrawals = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const {
-    withdrawals = [],
-    stats,
-    pagination = {},
-    loading,
-    processing,
-    error,
-    totalWithdrawals,
-  } = useSelector((state) => state.withdrawals || {});
+  // Direct selectors (prevents unnecessary Redux re-render warnings)
+  const reduxWithdrawals = useSelector(
+    (state) => state.withdrawals?.withdrawals
+  );
+  const reduxStats = useSelector((state) => state.withdrawals?.stats);
+  const reduxPagination = useSelector(
+    (state) => state.withdrawals?.pagination
+  );
+  const loading = Boolean(
+    useSelector((state) => state.withdrawals?.loading)
+  );
+  const processing = Boolean(
+    useSelector((state) => state.withdrawals?.processing)
+  );
+  const error = useSelector((state) => state.withdrawals?.error);
+  const reduxTotal = useSelector(
+    (state) => state.withdrawals?.totalWithdrawals
+  );
+  const user = useSelector((state) => state.auth?.user);
 
-  const { user } = useSelector((state) => state.auth || {});
-  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
-
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("dashboard-theme") || "day";
+  const [localData, setLocalData] = useState({
+    withdrawals: EMPTY_ARRAY,
+    stats: null,
+    pagination: EMPTY_OBJECT,
+    total: 0,
   });
 
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("dashboard-theme") || "day"
+  );
   const t = themes[theme] || themes.day;
 
   const [filters, setFilters] = useState({ status: "" });
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageLimit, setPageLimit] = useState(10);
   const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const fetchingRef = useRef(false);
+
+  const withdrawals = Array.isArray(reduxWithdrawals)
+    ? reduxWithdrawals
+    : localData.withdrawals;
+
+  const stats = reduxStats || localData.stats;
+  const pagination =
+    reduxPagination && Object.keys(reduxPagination).length > 0
+      ? reduxPagination
+      : localData.pagination;
+  const totalWithdrawals =
+    reduxTotal ?? pagination?.total ?? localData.total ?? withdrawals.length;
 
   useEffect(() => {
     localStorage.setItem("dashboard-theme", theme);
@@ -62,29 +95,49 @@ const AdminWithdrawals = () => {
     navigate("/login");
   };
 
-  const pageLimit = pagination?.limit || 10;
-
   const fetchWithdrawalsData = useCallback(async () => {
-    const params = {
-      status: filters.status || "",
-      page: currentPage,
-      limit: pageLimit,
-      search: searchTerm.trim(),
-    };
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
 
-    Object.keys(params).forEach((key) => {
-      if (!params[key] || params[key] === "") delete params[key];
-    });
+    try {
+      const params = {
+        page: currentPage,
+        limit: pageLimit,
+      };
+      if (filters.status) params.status = filters.status;
+      if (searchTerm.trim()) params.search = searchTerm.trim();
 
-    await dispatch(fetchWithdrawals(params));
+      const result = await dispatch(fetchWithdrawals(params));
+
+      if (fetchWithdrawals.fulfilled.match(result)) {
+        const root = result.payload?.data || result.payload || {};
+        const list = Array.isArray(root)
+          ? root
+          : root.withdrawals || root.data || EMPTY_ARRAY;
+
+        setLocalData({
+          withdrawals: list,
+          stats: root.stats || null,
+          pagination: root.pagination || EMPTY_OBJECT,
+          total: root.pagination?.total ?? list.length,
+        });
+      }
+    } finally {
+      fetchingRef.current = false;
+    }
   }, [dispatch, filters.status, currentPage, pageLimit, searchTerm]);
 
   useEffect(() => {
     fetchWithdrawalsData();
   }, [fetchWithdrawalsData]);
 
+  // Auto-refresh only when browser tab is active
   useEffect(() => {
-    const interval = setInterval(fetchWithdrawalsData, 30000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        fetchWithdrawalsData();
+      }
+    }, 1000000);
     return () => clearInterval(interval);
   }, [fetchWithdrawalsData]);
 
@@ -96,7 +149,9 @@ const AdminWithdrawals = () => {
   }, [error, dispatch]);
 
   useEffect(() => {
-    return () => dispatch(resetWithdrawalState());
+    return () => {
+      dispatch(resetWithdrawalState());
+    };
   }, [dispatch]);
 
   const handleApprove = async (id) => {
@@ -167,9 +222,28 @@ const AdminWithdrawals = () => {
     setCurrentPage(1);
   };
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
+  const handlePageChange = useCallback(
+    (page) => {
+      const nextPage = Number(page);
+      if (!Number.isInteger(nextPage) || nextPage < 1 || nextPage === currentPage) {
+        return;
+      }
+      setCurrentPage(nextPage);
+    },
+    [currentPage]
+  );
+
+  const handleLimitChange = useCallback(
+    (limit) => {
+      const nextLimit = Number(limit);
+      if (!ALLOWED_LIMITS.includes(nextLimit) || nextLimit === pageLimit) {
+        return;
+      }
+      setPageLimit(nextLimit);
+      setCurrentPage(1);
+    },
+    [pageLimit]
+  );
 
   const handleViewDetails = (withdrawal) => {
     setSelectedWithdrawal(withdrawal);
@@ -181,17 +255,33 @@ const AdminWithdrawals = () => {
     toast.success("Refreshed!");
   };
 
-  const effectivePagination = {
-    ...pagination,
-    page: pagination?.page || currentPage,
-    limit: pageLimit,
-  };
+  const effectivePagination = useMemo(() => {
+    const totalCount =
+      Number(pagination?.total) >= 0
+        ? Number(pagination.total)
+        : Number(totalWithdrawals) || 0;
 
-   if (loading && withdrawals.length === 0) {
+    const calculatedPages = Math.max(1, Math.ceil(totalCount / pageLimit));
+    const totalPages =
+      Number(pagination?.pages) > 0
+        ? Number(pagination.pages)
+        : calculatedPages;
+
+    return {
+      ...pagination,
+      page: currentPage,
+      limit: pageLimit,
+      total: totalCount,
+      pages: totalPages,
+      hasPreviousPage: currentPage > 1,
+      hasNextPage: currentPage < totalPages,
+    };
+  }, [pagination, currentPage, pageLimit, totalWithdrawals]);
+
+  if (loading && withdrawals.length === 0) {
     return (
       <div className={`min-h-screen ${t.page} transition-colors duration-300`}>
-        {/* 🔴 Conditional AdminNavbar */}
-        {!isAdmin && (
+        {isAdmin && (
           <AdminNavbar
             theme={theme}
             setTheme={setTheme}
@@ -201,7 +291,9 @@ const AdminWithdrawals = () => {
         )}
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
-            <FaSpinner className={`animate-spin text-4xl ${t.accentText} mx-auto mb-4`} />
+            <FaSpinner
+              className={`animate-spin text-4xl ${t.accentText} mx-auto mb-4`}
+            />
             <p className={t.text}>Loading withdrawals...</p>
           </div>
         </div>
@@ -209,14 +301,9 @@ const AdminWithdrawals = () => {
     );
   }
 
-  // ============================================================
-  // PAGE
-  // ============================================================
-
   return (
     <div className={`min-h-screen ${t.page} transition-colors duration-300`}>
-      {/* 🔴 Conditional AdminNavbar */}
-      {!isAdmin && (
+      {isAdmin && (
         <AdminNavbar
           theme={theme}
           setTheme={setTheme}
@@ -225,7 +312,11 @@ const AdminWithdrawals = () => {
         />
       )}
 
-      <div className={`max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6 ${isAdmin ? "pt-6" : ""}`}>
+      <div
+        className={`max-w-7xl mx-auto p-3 md:p-6 space-y-4 md:space-y-6 ${
+          isAdmin ? "pt-6" : ""
+        }`}
+      >
         <AdminWithdrawalsHeader
           onRefresh={handleRefresh}
           loading={loading}
@@ -252,6 +343,7 @@ const AdminWithdrawals = () => {
           withdrawals={withdrawals}
           pagination={effectivePagination}
           onPageChange={handlePageChange}
+          onLimitChange={handleLimitChange}
           onApprove={handleApprove}
           onComplete={handleComplete}
           onReject={handleReject}

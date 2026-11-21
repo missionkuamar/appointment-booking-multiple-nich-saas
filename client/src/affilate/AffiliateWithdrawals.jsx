@@ -2,31 +2,19 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FaSpinner } from "react-icons/fa";
 
 import { logout } from "../features/auth/authSlice";
 import { clearBusiness } from "../features/business/businessSlice";
 import {
   fetchWithdrawalsList,
-  fetchWithdrawalStats,
   fetchWithdrawalEarnings,
   requestWithdrawal,
   cancelWithdrawalRequest,
-  setWithdrawalFilters,
   setWithdrawalPage,
-  setWithdrawalLimit,
+  setWithdrawalStatusFilter,
 } from "../features/withdrawal/withdrawalSlice";
 import Navbar from "../components/Navbar";
 import { themes } from "../constants/themes";
-
-// Components
-import WithdrawalHeader from "./components/WithdrawalHeader";
-import WithdrawalStats from "./components/WithdrawalStats";
-import WithdrawalFilters from "./components/WithdrawalFilters";
-import WithdrawalTable from "./components/WithdrawalTable";
-import WithdrawModal from "./components/WithdrawModal";
-import WithdrawalDetailModal from "./components/WithdrawalDetailModal";
-import WithdrawalStatsModal from "./components/WithdrawalStatsModal";
 
 const AffiliateWithdrawals = () => {
   const dispatch = useDispatch();
@@ -34,20 +22,18 @@ const AffiliateWithdrawals = () => {
   const { user } = useSelector((state) => state.auth || {});
   const {
     withdrawals,
-    withdrawStats,
     earnings,
     pagination,
-    filters,
+    statusFilter,
     loading,
     withdrawLoading,
   } = useSelector((state) => state.withdrawal);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("dashboard-theme") || "day";
-  });
-
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem("dashboard-theme") || "day"
+  );
   const t = themes[theme] || themes.day;
 
   useEffect(() => {
@@ -60,249 +46,110 @@ const AffiliateWithdrawals = () => {
     navigate("/login");
   };
 
-  // ============================================================
-  // MODALS & FORM LOCAL STATE
-  // ============================================================
-
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedWithdrawal, setSelectedWithdrawal] = useState(null);
-
+  // Withdraw Form Modal State
+  const [showModal, setShowModal] = useState(false);
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("bank");
-
   const [paymentDetails, setPaymentDetails] = useState({
     accountHolderName: "",
     bankName: "",
     accountNumber: "",
-    ifscCode: "",
-    accountType: "savings",
+    ifsc: "",
     upiId: "",
-    upiName: "",
     paypalEmail: "",
-    paypalName: "",
   });
 
-  const resetPaymentDetails = () => {
-    setPaymentDetails({
-      accountHolderName: "",
-      bankName: "",
-      accountNumber: "",
-      ifscCode: "",
-      accountType: "savings",
-      upiId: "",
-      upiName: "",
-      paypalEmail: "",
-      paypalName: "",
-    });
-  };
-
-  // ============================================================
-  // FETCH EFFECTS
-  // ============================================================
-
+  // Fetch 10 withdrawals when page or statusFilter changes (No loop!)
   useEffect(() => {
-    const loadList = async () => {
-      const result = await dispatch(fetchWithdrawalsList());
-      if (fetchWithdrawalsList.rejected.match(result)) {
-        toast.error(result.payload || "Failed to load withdrawals");
-      }
-    };
-    loadList();
-  }, [
-    dispatch,
-    pagination.page,
-    pagination.limit,
-    filters.status,
-    filters.paymentMethod,
-    filters.search,
-    filters.startDate,
-    filters.endDate,
-  ]);
+    dispatch(
+      fetchWithdrawalsList({
+        page: pagination.page,
+        status: statusFilter,
+      })
+    );
+  }, [dispatch, pagination.page, statusFilter]);
 
+  // Fetch available balance once on mount
   useEffect(() => {
-    const loadMeta = async () => {
-      const [statsRes, earningsRes] = await Promise.all([
-        dispatch(fetchWithdrawalStats()),
-        dispatch(fetchWithdrawalEarnings()),
-      ]);
-
-      if (fetchWithdrawalStats.rejected.match(statsRes)) {
-        toast.error(statsRes.payload || "Failed to load withdrawal stats");
-      }
-      if (fetchWithdrawalEarnings.rejected.match(earningsRes)) {
-        toast.error(earningsRes.payload || "Failed to load earnings");
-      }
-    };
-    loadMeta();
+    dispatch(fetchWithdrawalEarnings());
   }, [dispatch]);
-
-  // ============================================================
-  // HANDLERS
-  // ============================================================
-
-  const handleLimitChange = (newLimit) => {
-    dispatch(setWithdrawalLimit(newLimit));
-  };
-
-  const handlePageChange = (newPage) => {
-    const page = Number(newPage);
-    if (!Number.isFinite(page)) return;
-    if (page < 1 || (pagination.pages > 0 && page > pagination.pages)) return;
-    dispatch(setWithdrawalPage(page));
-  };
-
-  const handleFilterChange = (newFilters) => {
-    dispatch(setWithdrawalFilters(newFilters));
-  };
 
   const handleWithdraw = async (e) => {
     e.preventDefault();
-
     const amountNum = Number(parseFloat(amount));
-    const MIN_WITHDRAWAL = 100;
-    const MAX_WITHDRAWAL = 10000;
 
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      toast.error("Please enter a valid withdrawal amount");
-      return;
+    if (!Number.isFinite(amountNum) || amountNum < 100) {
+      return toast.error("Minimum withdrawal is ₹100");
     }
-
-    if (amountNum < MIN_WITHDRAWAL) {
-      toast.error(`Minimum withdrawal is ₹${MIN_WITHDRAWAL}`);
-      return;
+    if (amountNum > 10000) {
+      return toast.error("Maximum withdrawal is ₹10,000");
     }
-
-    if (amountNum > MAX_WITHDRAWAL) {
-      toast.error(`Maximum per transaction is ₹${MAX_WITHDRAWAL}`);
-      return;
-    }
-
     if (amountNum > earnings) {
-      toast.error("Insufficient earnings");
-      return;
+      return toast.error("Insufficient balance");
     }
 
-    const normalizedPaymentDetails = {
-      ...paymentDetails,
-      accountHolderName: paymentDetails?.accountHolderName?.trim() || "",
-      bankName: paymentDetails?.bankName?.trim() || "",
-      accountNumber: paymentDetails?.accountNumber?.trim() || "",
-      ifsc:
-        paymentDetails?.ifsc?.trim() ||
-        paymentDetails?.ifscCode?.trim() ||
-        "",
-      upiId: paymentDetails?.upiId?.trim() || "",
-      upiName: paymentDetails?.upiName?.trim() || "",
-      paypalEmail: paymentDetails?.paypalEmail?.trim() || "",
-      paypalName: paymentDetails?.paypalName?.trim() || "",
-    };
-
-    if (paymentMethod === "bank") {
-      if (
-        !normalizedPaymentDetails.accountHolderName ||
-        !normalizedPaymentDetails.accountNumber ||
-        !normalizedPaymentDetails.ifsc
-      ) {
-        toast.error(
-          "Please enter Account Holder Name, Account Number and IFSC Code"
-        );
-        return;
-      }
+    if (paymentMethod === "paypal" && !paymentDetails.paypalEmail.trim()) {
+      return toast.error("Please enter PayPal Email");
     }
 
-    if (paymentMethod === "upi") {
-      if (!normalizedPaymentDetails.upiId) {
-        toast.error("Please enter your UPI ID");
-        return;
-      }
+    if (
+      paymentMethod === "bank" &&
+      (!paymentDetails.accountHolderName.trim() ||
+        !paymentDetails.accountNumber.trim() ||
+        !paymentDetails.ifsc.trim())
+    ) {
+      return toast.error("Please fill Account Holder Name, Account Number & IFSC");
+    }
+
+    if (paymentMethod === "upi" && !paymentDetails.upiId.trim()) {
+      return toast.error("Please enter UPI ID");
     }
 
     const result = await dispatch(
       requestWithdrawal({
         amount: amountNum,
         paymentMethod,
-        paymentDetails: normalizedPaymentDetails,
+        paymentDetails,
       })
     );
 
     if (requestWithdrawal.fulfilled.match(result)) {
-      toast.success(
-        "Withdrawal request submitted! Admin will process it shortly."
-      );
-      setShowWithdrawModal(false);
+      toast.success("Withdrawal request submitted!");
+      setShowModal(false);
       setAmount("");
-      resetPaymentDetails();
+      setPaymentDetails({
+        accountHolderName: "",
+        bankName: "",
+        accountNumber: "",
+        ifsc: "",
+        upiId: "",
+      });
     } else {
-      toast.error(result.payload || "Failed to request withdrawal");
+      toast.error(result.payload || "Request failed");
     }
   };
 
-  const handleCancelWithdrawal = async (id) => {
-    if (!id) return;
-
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel this withdrawal?"
-    );
-    if (!confirmed) return;
-
+  const handleCancel = async (id) => {
+    if (!window.confirm("Cancel this withdrawal request?")) return;
     const result = await dispatch(cancelWithdrawalRequest(id));
     if (cancelWithdrawalRequest.fulfilled.match(result)) {
-      toast.success("Withdrawal cancelled successfully");
+      toast.success("Withdrawal cancelled");
     } else {
-      toast.error(result.payload || "Failed to cancel withdrawal");
+      toast.error(result.payload || "Cancel failed");
     }
   };
 
-  const handleViewDetails = (withdrawal) => {
-    setSelectedWithdrawal(withdrawal);
-    setShowDetailModal(true);
+  const formatDate = (date) => {
+    if (!date) return "—";
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   };
-
-  const openWithdrawModal = () => {
-    setShowWithdrawModal(true);
-  };
-
-  // ============================================================
-  // INITIAL FULL PAGE LOADING
-  // ============================================================
-
-  if (loading && withdrawals.length === 0) {
-    return (
-      <div
-        className={`min-h-screen w-full ${t.page} transition-colors duration-300`}
-      >
-        {!isAdmin && (
-          <Navbar
-            theme={theme}
-            setTheme={setTheme}
-            user={user}
-            handleLogout={handleLogout}
-          />
-        )}
-        <div className="flex items-center justify-center py-24 px-4">
-          <div className="text-center">
-            <FaSpinner
-              className={`animate-spin text-3xl sm:text-4xl ${t.accentText} mx-auto mb-4`}
-            />
-            <p className={`text-sm sm:text-base ${t.text}`}>
-              Loading withdrawals...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ============================================================
-  // PAGE
-  // ============================================================
 
   return (
-    <div
-      className={`min-h-screen w-full min-w-0 ${t.page} overflow-x-hidden pb-10 transition-colors duration-300`}
-    >
+    <div className={`min-h-screen ${t.page} pb-12`}>
       {!isAdmin && (
         <Navbar
           theme={theme}
@@ -312,85 +159,300 @@ const AffiliateWithdrawals = () => {
         />
       )}
 
-      <div
-        className={`w-full max-w-7xl mx-auto min-w-0 px-3 py-4 sm:px-4 sm:py-5 md:px-6 md:py-6 lg:px-8 space-y-4 sm:space-y-5 md:space-y-6 ${
-          isAdmin ? "pt-6" : ""
-        }`}
-      >
-        <div className="w-full min-w-0">
-          <WithdrawalHeader
-            theme={theme}
-            onBack={() => navigate("/affiliate")}
-            onViewStats={() => setShowStatsModal(true)}
-            onWithdraw={openWithdrawModal}
-            earnings={earnings}
-          />
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+        {/* Header + Available Balance */}
+        <div
+          className={`p-5 rounded-xl border ${t.card} ${t.border} flex flex-wrap items-center justify-between gap-4`}
+        >
+          <div>
+            <button
+              onClick={() => navigate("/affiliate")}
+              className={`text-xs ${t.muted} hover:underline`}
+            >
+              ← Back
+            </button>
+            <h1 className={`text-xl font-bold mt-1 ${t.text}`}>Withdrawals</h1>
+            <p className={`text-sm mt-1 ${t.muted}`}>
+              Available Balance:{" "}
+              <strong className={`text-lg ${t.text}`}>₹{earnings}</strong>
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowModal(true)}
+            disabled={earnings < 100}
+            className="px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+          >
+            + Withdraw Money
+          </button>
         </div>
 
-        <div className="w-full min-w-0">
-          <WithdrawalStats
-            theme={theme}
-            withdrawStats={withdrawStats}
-            withdrawals={withdrawals}
-          />
-        </div>
+        {/* History Table Header + Status Filter */}
+        <div className={`rounded-xl border ${t.card} ${t.border} overflow-hidden`}>
+          <div
+            className={`px-4 py-3 border-b ${t.border} flex items-center justify-between gap-3`}
+          >
+            <h2 className={`text-sm font-semibold ${t.text}`}>
+              Withdrawal History ({pagination.total})
+            </h2>
 
-        <div className="w-full min-w-0">
-          <WithdrawalFilters
-            theme={theme}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-          />
-        </div>
+            <select
+              value={statusFilter}
+              onChange={(e) =>
+                dispatch(setWithdrawalStatusFilter(e.target.value))
+              }
+              className={`px-3 py-1.5 rounded-lg border text-xs ${t.card} ${t.border} ${t.text}`}
+            >
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="rejected">Rejected</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
 
-        <div className="w-full min-w-0 overflow-hidden">
-          <WithdrawalTable
-            theme={theme}
-            withdrawals={withdrawals}
-            loading={loading}
-            onLimitChange={handleLimitChange}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onViewDetails={handleViewDetails}
-            onCancel={handleCancelWithdrawal}
-            onWithdraw={openWithdrawModal}
-            earnings={earnings}
-          />
+          {/* Table */}
+          {loading ? (
+            <p className={`p-8 text-center text-sm ${t.muted}`}>Loading...</p>
+          ) : withdrawals.length === 0 ? (
+            <p className={`p-8 text-center text-sm ${t.muted}`}>
+              No withdrawal history found.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className={`border-b ${t.border} ${t.soft} text-xs`}>
+                  <tr>
+                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4">Amount</th>
+                    <th className="py-3 px-4">Method</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${t.border}`}>
+                  {withdrawals.map((item) => (
+                    <tr key={item._id}>
+                      <td className={`py-3 px-4 ${t.muted}`}>
+                        {formatDate(item.createdAt)}
+                      </td>
+                      <td className={`py-3 px-4 font-semibold ${t.text}`}>
+                        ₹{item.amount}
+                      </td>
+                      <td className={`py-3 px-4 capitalize ${t.text}`}>
+                        {item.paymentMethod}
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${item.status === "completed" ||
+                              item.status === "approved"
+                              ? "bg-green-100 text-green-700"
+                              : item.status === "pending"
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-red-100 text-red-700"
+                            }`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        {item.status === "pending" ? (
+                          <button
+                            onClick={() => handleCancel(item._id)}
+                            className="text-xs text-red-600 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        ) : (
+                          <span className={`text-xs ${t.muted}`}>—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Simple Pagination (10 per page) */}
+          {pagination.pages > 1 && (
+            <div
+              className={`px-4 py-3 border-t ${t.border} flex items-center justify-between text-xs`}
+            >
+              <button
+                onClick={() => dispatch(setWithdrawalPage(pagination.page - 1))}
+                disabled={pagination.page <= 1}
+                className={`px-3 py-1.5 rounded border ${t.border} ${t.text} disabled:opacity-40`}
+              >
+                ← Prev
+              </button>
+
+              <span className={t.muted}>
+                Page {pagination.page} of {pagination.pages}
+              </span>
+
+              <button
+                onClick={() => dispatch(setWithdrawalPage(pagination.page + 1))}
+                disabled={pagination.page >= pagination.pages}
+                className={`px-3 py-1.5 rounded border ${t.border} ${t.text} disabled:opacity-40`}
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      <WithdrawModal
-        theme={theme}
-        isOpen={showWithdrawModal}
-        onClose={() => {
-          if (!withdrawLoading) {
-            setShowWithdrawModal(false);
-          }
-        }}
-        earnings={earnings}
-        amount={amount}
-        setAmount={setAmount}
-        paymentMethod={paymentMethod}
-        setPaymentMethod={setPaymentMethod}
-        paymentDetails={paymentDetails}
-        setPaymentDetails={setPaymentDetails}
-        onSubmit={handleWithdraw}
-        loading={withdrawLoading}
-      />
+      {/* Withdraw Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div
+            className={`w-full max-w-md rounded-xl p-5 border ${t.card} ${t.border}`}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h2 className={`text-base font-bold ${t.text}`}>
+                Request Withdrawal
+              </h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className={`text-sm ${t.muted}`}
+              >
+                ✕
+              </button>
+            </div>
 
-      <WithdrawalDetailModal
-        theme={theme}
-        isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        withdrawal={selectedWithdrawal}
-      />
+            <p className={`text-xs mb-4 ${t.muted}`}>
+              Available: <strong>₹{earnings}</strong> (Min ₹100 • Max ₹10,000)
+            </p>
 
-      <WithdrawalStatsModal
-        theme={theme}
-        isOpen={showStatsModal}
-        onClose={() => setShowStatsModal(false)}
-        withdrawals={withdrawals}
-      />
+            <form onSubmit={handleWithdraw} className="space-y-3">
+              <input
+                type="number"
+                placeholder="Amount (₹)"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                required
+              />
+
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+              >
+                <option value="bank">Bank Transfer</option>
+                <option value="upi">UPI</option>
+                <option value="paypal">PayPal</option>
+              </select>
+
+              {paymentMethod === "bank" && (
+                <>
+                  <input
+                    type="text"
+                    placeholder="Account Holder Name *"
+                    value={paymentDetails.accountHolderName}
+                    onChange={(e) =>
+                      setPaymentDetails({
+                        ...paymentDetails,
+                        accountHolderName: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="Bank Name"
+                    value={paymentDetails.bankName}
+                    onChange={(e) =>
+                      setPaymentDetails({
+                        ...paymentDetails,
+                        bankName: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Account Number *"
+                    value={paymentDetails.accountNumber}
+                    onChange={(e) =>
+                      setPaymentDetails({
+                        ...paymentDetails,
+                        accountNumber: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                    required
+                  />
+                  <input
+                    type="text"
+                    placeholder="IFSC Code *"
+                    value={paymentDetails.ifsc}
+                    onChange={(e) =>
+                      setPaymentDetails({
+                        ...paymentDetails,
+                        ifsc: e.target.value,
+                      })
+                    }
+                    className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                    required
+                  />
+                </>
+              )}
+
+              {paymentMethod === "upi" && (
+                <input
+                  type="text"
+                  placeholder="UPI ID (e.g. name@upi) *"
+                  value={paymentDetails.upiId}
+                  onChange={(e) =>
+                    setPaymentDetails({
+                      ...paymentDetails,
+                      upiId: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                  required
+                />
+              )}
+
+              {paymentMethod === "paypal" && (
+                <input
+                  type="email"
+                  placeholder="PayPal Email *"
+                  value={paymentDetails.paypalEmail}
+                  onChange={(e) =>
+                    setPaymentDetails({
+                      ...paymentDetails,
+                      paypalEmail: e.target.value,
+                    })
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm ${t.card} ${t.border} ${t.text}`}
+                  required
+                />
+              )}
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className={`px-4 py-2 border rounded-lg text-sm ${t.border} ${t.text}`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={withdrawLoading}
+                  className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium disabled:opacity-50"
+                >
+                  {withdrawLoading ? "Submitting..." : "Submit"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

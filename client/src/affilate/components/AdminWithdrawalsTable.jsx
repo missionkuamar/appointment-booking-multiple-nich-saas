@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   FaWallet,
   FaEye,
@@ -7,6 +8,8 @@ import {
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { themes } from "../../constants/themes";
+
+const ALLOWED_LIMITS = [5, 10, 20, 50, 100, 200];
 
 const AdminWithdrawalsTable = ({
   withdrawals = [],
@@ -23,10 +26,6 @@ const AdminWithdrawalsTable = ({
   const fallbackKey = localStorage.getItem("dashboard-theme") || "day";
   const t = themeProp || themes[fallbackKey] || themes.day;
 
-  // ==========================================================
-  // SAFE VALUES
-  // ==========================================================
-
   const safeWithdrawals = Array.isArray(withdrawals)
     ? withdrawals.filter(Boolean)
     : [];
@@ -34,55 +33,67 @@ const AdminWithdrawalsTable = ({
   const safePagination =
     pagination && typeof pagination === "object" ? pagination : {};
 
+  const [internalPage, setInternalPage] = useState(1);
+  const [internalLimit, setInternalLimit] = useState(10);
+
+  useEffect(() => {
+    const nextPage = Number(safePagination?.page);
+    if (Number.isInteger(nextPage) && nextPage > 0) {
+      setInternalPage((prev) => (prev === nextPage ? prev : nextPage));
+    }
+  }, [safePagination?.page]);
+
+  useEffect(() => {
+    const nextLimit = Number(safePagination?.limit);
+    if (ALLOWED_LIMITS.includes(nextLimit)) {
+      setInternalLimit((prev) => (prev === nextLimit ? prev : nextLimit));
+    }
+  }, [safePagination?.limit]);
+
   const currentPage =
-    Number(safePagination?.page) > 0 ? Number(safePagination.page) : 1;
+    typeof onPageChange === "function" && Number(safePagination?.page) > 0
+      ? Number(safePagination.page)
+      : internalPage;
 
   const currentLimit =
-    Number(safePagination?.limit) > 0 ? Number(safePagination.limit) : 20;
+    typeof onLimitChange === "function" && Number(safePagination?.limit) > 0
+      ? Number(safePagination.limit)
+      : internalLimit;
 
+  const rawTotal = Number(safePagination?.total);
   const total =
-    Number(safePagination?.total) >= 0 ? Number(safePagination.total) : 0;
+    Number.isFinite(rawTotal) && rawTotal >= safeWithdrawals.length
+      ? rawTotal
+      : safeWithdrawals.length;
 
-  const totalPages =
-    Number(safePagination?.pages) > 0 ? Number(safePagination.pages) : 1;
+  const totalPages = Math.max(
+    1,
+    Number(safePagination?.pages) > 0 && rawTotal >= safeWithdrawals.length
+      ? Number(safePagination.pages)
+      : Math.ceil(total / currentLimit)
+  );
 
-  const firstPage =
-    Number(safePagination?.firstPage) > 0
-      ? Number(safePagination.firstPage)
-      : 1;
-
-  const lastPage =
-    Number(safePagination?.lastPage) > 0
-      ? Number(safePagination.lastPage)
-      : totalPages;
+  const validCurrentPage = Math.min(Math.max(1, currentPage), totalPages);
+  const firstPage = 1;
+  const lastPage = totalPages;
 
   const hasPreviousPage =
-    safePagination?.hasPreviousPage === true || currentPage > 1;
-
+    validCurrentPage > 1 ||
+    Boolean(safePagination?.hasPreviousPage || safePagination?.hasPrev);
   const hasNextPage =
-    safePagination?.hasNextPage === true || currentPage < totalPages;
+    validCurrentPage < totalPages ||
+    Boolean(safePagination?.hasNextPage || safePagination?.hasNext);
 
-  // ==========================================================
-  // SAFE RANGE
-  // ==========================================================
+  const displayedWithdrawals =
+    safeWithdrawals.length > currentLimit
+      ? safeWithdrawals.slice(
+          (validCurrentPage - 1) * currentLimit,
+          validCurrentPage * currentLimit
+        )
+      : safeWithdrawals;
 
-  const startItem =
-    total === 0
-      ? 0
-      : Number(safePagination?.startItem) > 0
-        ? Number(safePagination.startItem)
-        : (currentPage - 1) * currentLimit + 1;
-
-  const endItem =
-    total === 0
-      ? 0
-      : Number(safePagination?.endItem) > 0
-        ? Number(safePagination.endItem)
-        : Math.min(currentPage * currentLimit, total);
-
-  // ==========================================================
-  // STATUS BADGE
-  // ==========================================================
+  const startItem = total === 0 ? 0 : (validCurrentPage - 1) * currentLimit + 1;
+  const endItem = total === 0 ? 0 : Math.min(validCurrentPage * currentLimit, total);
 
   const getStatusBadge = (status) => {
     const config = {
@@ -138,13 +149,8 @@ const AdminWithdrawalsTable = ({
     );
   };
 
-  // ==========================================================
-  // PAYMENT METHOD ICON & NAME
-  // ==========================================================
-
   const getPaymentMethodIcon = (method) => {
-    const safeMethod =
-      typeof method === "string" ? method.toLowerCase() : "";
+    const safeMethod = typeof method === "string" ? method.toLowerCase() : "";
     const icons = {
       bank: "🏦",
       upi: "📱",
@@ -154,8 +160,7 @@ const AdminWithdrawalsTable = ({
   };
 
   const getPaymentMethodName = (method) => {
-    const safeMethod =
-      typeof method === "string" ? method.toLowerCase() : "";
+    const safeMethod = typeof method === "string" ? method.toLowerCase() : "";
     const names = {
       bank: "Bank Transfer",
       upi: "UPI",
@@ -163,10 +168,6 @@ const AdminWithdrawalsTable = ({
     };
     return names[safeMethod] || (safeMethod ? safeMethod.toUpperCase() : "Unknown");
   };
-
-  // ==========================================================
-  // SAFE DATE & AMOUNT
-  // ==========================================================
 
   const formatDate = (date) => {
     if (!date) return "N/A";
@@ -190,10 +191,6 @@ const AdminWithdrawalsTable = ({
     return `₹${numericAmount.toFixed(2)}`;
   };
 
-  // ==========================================================
-  // COPY
-  // ==========================================================
-
   const copyToClipboard = async (text) => {
     if (!text) return;
 
@@ -209,28 +206,26 @@ const AdminWithdrawalsTable = ({
     }
   };
 
-  // ==========================================================
-  // SAFE CALLBACKS
-  // ==========================================================
-
   const safePageChange = (page) => {
-    if (typeof onPageChange !== "function") return;
     const numericPage = Number(page);
     if (!Number.isFinite(numericPage) || numericPage < 1) return;
 
-    const safePage = Math.min(
-      Math.max(Math.floor(numericPage), 1),
-      totalPages
-    );
-    onPageChange(safePage);
+    const next = Math.min(Math.max(Math.floor(numericPage), 1), totalPages);
+    setInternalPage(next);
+    if (typeof onPageChange === "function") {
+      onPageChange(next);
+    }
   };
 
   const safeLimitChange = (limit) => {
-    if (typeof onLimitChange !== "function") return;
-    const allowedLimits = [5, 10, 20, 50, 100, 200];
     const numericLimit = Number(limit);
-    if (!allowedLimits.includes(numericLimit)) return;
-    onLimitChange(numericLimit);
+    if (!ALLOWED_LIMITS.includes(numericLimit)) return;
+
+    setInternalLimit(numericLimit);
+    setInternalPage(1);
+    if (typeof onLimitChange === "function") {
+      onLimitChange(numericLimit);
+    }
   };
 
   const safeApprove = (id) => {
@@ -251,10 +246,6 @@ const AdminWithdrawalsTable = ({
     }
   };
 
-  // ==========================================================
-  // EMPTY STATE
-  // ==========================================================
-
   if (safeWithdrawals.length === 0) {
     return (
       <div className={`${t.card} rounded-2xl border ${t.border} overflow-hidden`}>
@@ -268,10 +259,6 @@ const AdminWithdrawalsTable = ({
       </div>
     );
   }
-
-  // ==========================================================
-  // MAIN TABLE
-  // ==========================================================
 
   return (
     <div className={`${t.card} rounded-2xl border ${t.border} overflow-hidden`}>
@@ -313,7 +300,7 @@ const AdminWithdrawalsTable = ({
           </thead>
 
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {safeWithdrawals.map((withdrawal, index) => {
+            {displayedWithdrawals.map((withdrawal, index) => {
               const w =
                 withdrawal && typeof withdrawal === "object" ? withdrawal : {};
               const id = w?._id || w?.id || `withdrawal-${index}`;
@@ -491,7 +478,7 @@ const AdminWithdrawalsTable = ({
           <button
             type="button"
             onClick={() => safePageChange(firstPage)}
-            disabled={!hasPreviousPage || currentPage === firstPage}
+            disabled={validCurrentPage === firstPage}
             className={`px-3 py-2 rounded-lg border ${t.border} ${t.text} text-xs sm:text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             First
@@ -499,7 +486,7 @@ const AdminWithdrawalsTable = ({
 
           <button
             type="button"
-            onClick={() => safePageChange(currentPage - 1)}
+            onClick={() => safePageChange(validCurrentPage - 1)}
             disabled={!hasPreviousPage}
             className={`px-3 py-2 rounded-lg border ${t.border} ${t.text} text-xs sm:text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
           >
@@ -509,12 +496,12 @@ const AdminWithdrawalsTable = ({
           <div
             className={`px-3 sm:px-4 py-2 rounded-lg ${t.soft} ${t.text} text-xs sm:text-sm font-semibold whitespace-nowrap`}
           >
-            Page {currentPage} / {totalPages}
+            Page {validCurrentPage} / {totalPages}
           </div>
 
           <button
             type="button"
-            onClick={() => safePageChange(currentPage + 1)}
+            onClick={() => safePageChange(validCurrentPage + 1)}
             disabled={!hasNextPage}
             className={`px-3 py-2 rounded-lg border ${t.border} ${t.text} text-xs sm:text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
           >
@@ -524,7 +511,7 @@ const AdminWithdrawalsTable = ({
           <button
             type="button"
             onClick={() => safePageChange(lastPage)}
-            disabled={!hasNextPage || currentPage === lastPage}
+            disabled={validCurrentPage === lastPage}
             className={`px-3 py-2 rounded-lg border ${t.border} ${t.text} text-xs sm:text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             Last

@@ -43,38 +43,50 @@ const SubscriptionPage = () => {
     totalPages: 1,
   });
 
-  const fetchSubscriptionHistory = async (targetPage = 1) => {
-    setHistoryLoading(true);
-    try {
-      const res = await api.get("/subscriptions/history", {
-        params: { page: targetPage, limit: 10 },
-      });
+ const fetchSubscriptionHistory = async (targetPage = 1) => {
+  console.log("📡 [fetchSubscriptionHistory] Fetching history for page:", targetPage);
+  setHistoryLoading(true);
 
-      const list = Array.isArray(res.data)
-        ? res.data
-        : res.data?.data || res.data?.history || [];
+  try {
+    const res = await api.get("/subscriptions/history", {
+      params: { page: targetPage, limit: 10 },
+    });
 
-      setHistory(list);
+    console.log("res hisitoer =  ", res);
+    console.log("📦 [fetchSubscriptionHistory] res.data:", res.data);
 
-      if (res.data?.pagination) {
-        setHistoryPagination(res.data.pagination);
-      } else {
-        setHistoryPagination({
-          page: targetPage,
-          limit: 10,
-          total: list.length,
-          totalPages: Math.max(Math.ceil(list.length / 10), 1),
-        });
-      }
-    } catch (err) {
-      console.warn("⚠️ Could not load subscription history:", err);
-      setHistory([]);
-    } finally {
-      setHistoryLoading(false);
+    const list = Array.isArray(res.data)
+      ? res.data
+      : res.data?.data || res.data?.history || [];
+
+    console.log("📋 [fetchSubscriptionHistory] Extracted list count:", list.length, list);
+    setHistory(list);
+
+    if (res.data?.pagination) {
+      console.log("📄 [fetchSubscriptionHistory] Using server pagination:", res.data.pagination);
+      setHistoryPagination(res.data.pagination);
+    } else {
+      const fallbackPagination = {
+        page: targetPage,
+        limit: 10,
+        total: list.length,
+        totalPages: Math.max(Math.ceil(list.length / 10), 1),
+      };
+      console.log("📄 [fetchSubscriptionHistory] Using fallback pagination:", fallbackPagination);
+      setHistoryPagination(fallbackPagination);
     }
-  };
+  } catch (err) {
+    console.warn("⚠️ Could not load subscription history:", err);
+    console.warn("⚠️ [fetchSubscriptionHistory] Error details:", err.response?.data || err.message);
+    setHistory([]);
+  } finally {
+    setHistoryLoading(false);
+    console.log("🏁 [fetchSubscriptionHistory] Completed for page:", targetPage);
+  }
+};
 
   useEffect(() => {
+    console.log("🔄 [SubscriptionPage] Fetching plans & subscription status...");
     dispatch(fetchPlans());
     dispatch(fetchSubscriptionStatus());
   }, [dispatch]);
@@ -89,108 +101,130 @@ const SubscriptionPage = () => {
     navigate("/login");
   };
 
-  const currentPlanId = (plan || "free").toLowerCase();
+  const currentPlanId = String(plan || "free")
+    .toLowerCase()
+    .trim();
+  const normalizedStatus = String(status || "active")
+    .toLowerCase()
+    .trim();
   const isPaidPlanActive =
-    status === "active" && currentPlanId !== "free";
+    normalizedStatus === "active" && currentPlanId !== "free";
 
-const handleSubscribe = async (planId) => {
-  if (planId === "free") return;
-
-  try {
-    console.log("🚀 [Frontend: handleSubscribe] Creating order for:", planId);
-    const res = await dispatch(createSubscription(planId));
-    if (!createSubscription.fulfilled.match(res)) {
-      console.error("❌ [Frontend: createSubscription failed]:", res.payload);
-      return toast.error(res.payload || "Failed to initiate order");
-    }
-
-    // Backend response kabhi direct payload mein hota hai aur kabhi res.payload.data mein
-    const payloadData = res.payload?.data || res.payload || {};
-    const {
-      orderId,
-      subscriptionId,
-      amount,
-      currency = "INR",
-      keyId,
-    } = payloadData;
-
-    const rzpKey = keyId || window.__RAZORPAY_KEY_ID__;
-
-    console.log("📦 [Frontend: handleSubscribe] Opening Razorpay modal:", {
-      orderId,
-      subscriptionId,
-      amount,
-      hasKeyId: !!rzpKey,
+  useEffect(() => {
+    console.log("📊 [SubscriptionPage] State:", {
+      plan,
+      currentPlanId,
+      status: normalizedStatus,
+      isPaidPlanActive,
+      loading,
+      plansCount: plans?.length || 0,
+      plans: plans?.map((pl) => ({ id: pl.id, _id: pl._id, name: pl.name, price: pl.price })),
     });
+  }, [plan, currentPlanId, normalizedStatus, isPaidPlanActive, loading, plans]);
 
-    if (!rzpKey) {
-      return toast.error("Razorpay Key ID missing");
+  const handleSubscribe = async (planId) => {
+    const cleanPlanId = String(planId || "").toLowerCase().trim();
+    console.log("🖱️ [SubscriptionPage] Subscribe clicked for:", cleanPlanId);
+
+    if (!cleanPlanId || cleanPlanId === "free") {
+      console.log("ℹ️ [SubscriptionPage] Free plan clicked, skipping checkout");
+      return;
     }
 
-    if (!orderId && !subscriptionId) {
-      return toast.error("Order ID missing from server response");
-    }
+    try {
+      console.log("🚀 [Frontend: handleSubscribe] Creating order for:", cleanPlanId);
+      const res = await dispatch(createSubscription(cleanPlanId));
+      if (!createSubscription.fulfilled.match(res)) {
+        console.error("❌ [Frontend: createSubscription failed]:", res.payload);
+        return toast.error(res.payload || "Failed to initiate order");
+      }
 
-    const options = {
-      key: rzpKey,
-      amount: amount, // in paise
-      currency,
-      ...(orderId ? { order_id: orderId } : { subscription_id: subscriptionId }),
-      name: "BookEasy",
-      description: `${planId.toUpperCase()} Plan Subscription`,
-      handler: async (response) => {
-        console.log("✅ [Frontend: Razorpay handler] Payment response:", response);
+      const payloadData = res.payload?.data || res.payload || {};
+      const {
+        orderId,
+        subscriptionId,
+        amount,
+        currency = "INR",
+        keyId,
+      } = payloadData;
 
-        const verifyRes = await dispatch(
-          verifyPayment({
-            orderId: response.razorpay_order_id || orderId,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature,
-            plan: planId,
-            // Subscription flow ke liye backward compatibility:
-            razorpay_order_id: response.razorpay_order_id || orderId,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_subscription_id: response.razorpay_subscription_id || subscriptionId,
-            razorpay_signature: response.razorpay_signature,
-          })
-        );
+      const rzpKey = keyId || window.__RAZORPAY_KEY_ID__;
 
-        if (verifyPayment.fulfilled.match(verifyRes)) {
-          toast.success("Subscription activated! 🎉");
-          await dispatch(fetchSubscriptionStatus());
-          setHistoryPage(1);
-          await fetchSubscriptionHistory(1);
-          navigate("/dashboard");
-        } else {
-          console.error("❌ [Frontend: verifyPayment rejected]:", verifyRes.payload);
-          toast.error("Verification failed. Contact support.");
-        }
-      },
-      modal: {
-        ondismiss: () => {
-          console.warn("⚠️ [Frontend: Razorpay modal] Closed without completing payment");
+      console.log("📦 [Frontend: handleSubscribe] Opening Razorpay modal:", {
+        orderId,
+        subscriptionId,
+        amount,
+        hasKeyId: !!rzpKey,
+      });
+
+      if (!rzpKey) {
+        return toast.error("Razorpay Key ID missing");
+      }
+
+      if (!orderId && !subscriptionId) {
+        return toast.error("Order ID missing from server response");
+      }
+
+      const options = {
+        key: rzpKey,
+        amount: amount,
+        currency,
+        ...(orderId ? { order_id: orderId } : { subscription_id: subscriptionId }),
+        name: "BookEasy",
+        description: `${cleanPlanId.toUpperCase()} Plan Subscription`,
+        handler: async (response) => {
+          console.log("✅ [Frontend: Razorpay handler] Payment response:", response);
+
+          const verifyRes = await dispatch(
+            verifyPayment({
+              orderId: response.razorpay_order_id || orderId,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature,
+              plan: cleanPlanId,
+              razorpay_order_id: response.razorpay_order_id || orderId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_subscription_id:
+                response.razorpay_subscription_id || subscriptionId,
+              razorpay_signature: response.razorpay_signature,
+            })
+          );
+
+          if (verifyPayment.fulfilled.match(verifyRes)) {
+            toast.success("Subscription activated! 🎉");
+            await dispatch(fetchSubscriptionStatus());
+            setHistoryPage(1);
+            await fetchSubscriptionHistory(1);
+            navigate("/dashboard");
+          } else {
+            console.error("❌ [Frontend: verifyPayment rejected]:", verifyRes.payload);
+            toast.error("Verification failed. Contact support.");
+          }
         },
-      },
-      prefill: {
-        name: user?.name || "",
-        email: user?.email || "",
-      },
-      theme: { color: "#4F46E5" },
-    };
+        modal: {
+          ondismiss: () => {
+            console.warn("⚠️ [Frontend: Razorpay modal] Closed without completing payment");
+          },
+        },
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+        },
+        theme: { color: "#4F46E5" },
+      };
 
-    const rzp = new window.Razorpay(options);
+      const rzp = new window.Razorpay(options);
 
-    rzp.on("payment.failed", (failureResponse) => {
-      console.error("❌ [Frontend: rzp payment.failed]:", failureResponse?.error);
-      toast.error(failureResponse?.error?.description || "Payment failed");
-    });
+      rzp.on("payment.failed", (failureResponse) => {
+        console.error("❌ [Frontend: rzp payment.failed]:", failureResponse?.error);
+        toast.error(failureResponse?.error?.description || "Payment failed");
+      });
 
-    rzp.open();
-  } catch (err) {
-    console.error("❌ [Frontend: handleSubscribe] Unexpected error:", err);
-    toast.error(err?.message || "Something went wrong");
-  }
-};
+      rzp.open();
+    } catch (err) {
+      console.error("❌ [Frontend: handleSubscribe] Unexpected error:", err);
+      toast.error(err?.message || "Something went wrong");
+    }
+  };
 
   const handleCancel = async () => {
     if (!window.confirm("Cancel active paid subscription?")) return;
@@ -245,10 +279,12 @@ const handleSubscribe = async (planId) => {
           </Link>
         </div>
 
-        {/* Current Plan Banner (Always visible so user sees Free or Paid active plan) */}
+        {/* Current Plan Banner */}
         <div
           className={`rounded-2xl border ${t.card} ${t.border} p-5 mb-8 flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-l-4 ${
-            status === "active" ? "border-l-green-500" : "border-l-yellow-500"
+            normalizedStatus === "active"
+              ? "border-l-green-500"
+              : "border-l-yellow-500"
           }`}
         >
           <div>
@@ -261,12 +297,12 @@ const handleSubscribe = async (planId) => {
               </p>
               <span
                 className={`text-xs px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                  status === "active"
+                  normalizedStatus === "active"
                     ? "bg-green-500/15 text-green-500"
                     : "bg-yellow-500/15 text-yellow-500"
                 }`}
               >
-                {status || "active"}
+                {normalizedStatus || "active"}
               </span>
             </div>
             {endDate && (
@@ -276,44 +312,49 @@ const handleSubscribe = async (planId) => {
             )}
           </div>
 
-          {isPaidPlanActive && (
+          {/* {isPaidPlanActive && (
             <button
               onClick={handleCancel}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/15 text-red-500 hover:bg-red-500/25 transition self-start sm:self-auto"
             >
               Cancel Subscription
             </button>
-          )}
+          )} */}
         </div>
 
         {/* Plans Grid */}
-        {loading && plans.length === 0 ? (
+        {loading && (!plans || plans.length === 0) ? (
           <p className={`text-center py-10 text-sm ${t.muted}`}>
             Loading plans...
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {plans.map((p) => {
+            {(plans || []).map((p) => {
+              const planKey = String(p.id || p._id || p.name || "")
+                .toLowerCase()
+                .trim();
+              const isFreeTier = planKey === "free" || Number(p.price) === 0;
               const isCurrentPlan =
-                currentPlanId === p.id && (status === "active" || p.id === "free");
-              const isFreeTier = p.id === "free" || p.price === 0;
-              const isDisabled =
-                loading || isCurrentPlan || isFreeTier || isPaidPlanActive;
+                currentPlanId === planKey &&
+                (normalizedStatus === "active" || isFreeTier);
 
-              let buttonLabel = "Subscribe Now";
+              // ✅ Upgrade button tabhi disabled hoga jab plan already current/active ho ya free tier ho
+              const isDisabled = loading || isCurrentPlan || isFreeTier;
+
+              let buttonLabel = "Upgrade Now";
               if (isCurrentPlan) {
                 buttonLabel = "Current Plan ✓";
               } else if (isFreeTier) {
                 buttonLabel = "Default Free Tier";
-              } else if (isPaidPlanActive) {
-                buttonLabel = "Plan Active";
               } else if (currentPlanId === "free") {
                 buttonLabel = `Upgrade to ${p.name}`;
+              } else {
+                buttonLabel = `Switch to ${p.name}`;
               }
 
               return (
                 <div
-                  key={p.id}
+                  key={planKey || p.name}
                   className={`rounded-2xl border ${t.card} ${
                     p.popular
                       ? "border-2 border-indigo-500"
@@ -359,7 +400,8 @@ const handleSubscribe = async (planId) => {
                   </ul>
 
                   <button
-                    onClick={() => handleSubscribe(p.id)}
+                    type="button"
+                    onClick={() => handleSubscribe(p.id || p._id || p.name)}
                     disabled={isDisabled}
                     className={`w-full py-2.5 rounded-xl text-xs font-bold transition ${
                       isCurrentPlan

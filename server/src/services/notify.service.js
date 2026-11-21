@@ -198,3 +198,72 @@ export const sendReminderEmail = async (business, appointment, flag) => {
     throw error; 
   }
 };
+
+
+
+// ─────────────────────────────────────────────
+// 8. APPOINTMENT UPDATE NOTIFICATION (status / notes change)
+// ─────────────────────────────────────────────
+export const sendAppointmentUpdateNotification = async (
+  business,
+  appointment,
+  previousStatus
+) => {
+  if (!appointment?.clientEmail) {
+    console.log("⏭️ [Email] Update email skipped (Client email not provided)");
+    return;
+  }
+
+  const statusText = String(appointment.status || "updated");
+  const statusUpper = statusText.toUpperCase();
+  const manageLink = appointment.cancelToken
+    ? `${CLIENT_URL}/manage/${appointment.cancelToken}`
+    : `${CLIENT_URL}/book/${business.slug}`;
+
+  try {
+    console.log(
+      `📡 [Email] Sending Update Notification (${statusUpper}) to: ${appointment.clientEmail}...`
+    );
+
+    const info = await transporter.sendMail({
+      from: `"${business.businessName}" <${process.env.EMAIL_USER}>`,
+      to: appointment.clientEmail,
+      subject: `📌 Appointment ${statusUpper} - ${business.businessName}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4F46E5;">Appointment ${statusUpper}</h2>
+          <p>Hi <strong>${appointment.clientName}</strong>,</p>
+          <p>Your appointment status has been updated${
+            previousStatus && previousStatus !== statusText
+              ? ` from <strong>${previousStatus}</strong>`
+              : ""
+          } to <strong>${statusUpper}</strong>.</p>
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 16px 0;">
+            <p><strong>Business:</strong> ${business.businessName}</p>
+            <p><strong>Date:</strong> ${appointment.date}</p>
+            <p><strong>Time:</strong> ${appointment.time}</p>
+            <p><strong>Status:</strong> ${statusUpper}</p>
+            ${
+              appointment.notes
+                ? `<p><strong>Notes:</strong> ${appointment.notes}</p>`
+                : ""
+            }
+          </div>
+          <div style="text-align: center; margin-top: 24px;">
+            <a href="${manageLink}" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+              Manage Appointment
+            </a>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log(
+      `✅ [Email] Update Notification (${statusUpper}) Sent! (ID: ${info.messageId})`
+    );
+  } catch (error) {
+    console.error(
+      `❌ [Email] Update Notification Failed! Reason: ${error.message}`
+    );
+  }
+};

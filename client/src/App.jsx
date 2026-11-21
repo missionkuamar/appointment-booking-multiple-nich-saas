@@ -45,7 +45,7 @@ import AdminHolidaysPage from "./pages/admin/AdminHolidaysPage";
 import AdminSubscriptionsPage from "./pages/admin/AdminSubscriptionsPage";
 import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import SuperAdminUsersPage from "./pages/SuperAdminUsersPage";
-import AdminNotifications from "./affilate/components/AdminNotifications";
+import AdminNotifications from "./affilate/AdminNotifications";
 
 export const AffiliateRedirect = () => {
   const { slug } = useParams();

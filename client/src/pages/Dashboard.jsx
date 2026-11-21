@@ -44,16 +44,20 @@ const Dashboard = () => {
   const t = themes[theme] || themes.day;
 
 
-  
 useEffect(() => {
-    const reloadKey = "dashboard_reloaded_once";
-    const alreadyReloaded = sessionStorage.getItem(reloadKey);
+    const activeToken = token || localStorage.getItem("token");
+    if (!activeToken) return;
 
-    if (!alreadyReloaded) {
-      sessionStorage.setItem(reloadKey, "true");
-      window.location.reload();
-    }
-  }, []);
+    dispatch(fetchMyDoctors());
+    dispatch(
+      fetchMyAppointments({
+        status: "all",
+        page: 1,
+        limit: 5,
+      })
+    );
+    dispatch(fetchStats(chartRange));
+  }, [dispatch, token, chartRange]);
 
 
 

@@ -21,17 +21,41 @@ import { themes } from "../../constants/themes";
 
 const ALLOWED_LIMITS = [5, 10, 20, 50, 100, 200];
 const EMPTY_ARRAY = [];
+const DEFAULT_REFERRAL_STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "subscribed", label: "Subscribed" },
+  { value: "registered", label: "Registered" },
+  { value: "pending", label: "Pending" },
+];
+const DEFAULT_WITHDRAWAL_STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "processing", label: "Processing" },
+  { value: "completed", label: "Completed" },
+  { value: "failed", label: "Failed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "rejected", label: "Rejected" },
+];
 
 const AffiliateReferrals = ({
   title,
-  items: initialItems = EMPTY_ARRAY,
+  items: initialItemsProp,
+  referrals: referralsProp,
   type = "referral",
   onClose,
-  fetchUrl = null,
+  fetchUrl = "/affiliate/referrals",
+  isServerPaginated: isServerPaginatedProp,
   availableStatuses = [],
   theme: propTheme,
 }) => {
   const dispatch = useDispatch();
+
+  const initialItems = Array.isArray(initialItemsProp)
+    ? initialItemsProp
+    : Array.isArray(referralsProp)
+    ? referralsProp
+    : EMPTY_ARRAY;
 
   const [activeThemeName, setActiveThemeName] = useState(() => {
     if (typeof propTheme === "string" && themes[propTheme]) {
@@ -57,7 +81,10 @@ const AffiliateReferrals = ({
       : themes[activeThemeName] || themes.day;
 
   const isReferral = type === "referral";
-  const isServerPaginated = Boolean(fetchUrl);
+  const isServerPaginated =
+    typeof isServerPaginatedProp === "boolean"
+      ? isServerPaginatedProp
+      : Boolean(fetchUrl);
   const listKey = isReferral ? "referral" : "withdrawal";
 
   const bucket = useSelector(
@@ -74,6 +101,21 @@ const AffiliateReferrals = ({
     : Array.isArray(initialItems)
     ? initialItems
     : EMPTY_ARRAY;
+
+  console.log("[AffiliateReferrals][track items]", {
+    type,
+    listKey,
+    isReferral,
+    isServerPaginated,
+    isServerPaginatedProp,
+    fetchUrl,
+    source: isServerPaginated ? "redux.listData[listKey].items" : "initialItems/referrals prop",
+    itemsCount: items.length,
+    bucketItemsCount: bucket.items?.length ?? 0,
+    initialItemsCount: initialItems.length,
+    items,
+  });
+
   const pagination = bucket.pagination;
   const statusFilter = bucket.statusFilter;
   const loading = bucket.loading;
@@ -82,7 +124,10 @@ const AffiliateReferrals = ({
   const prevInitialRef = useRef(initialItems);
 
   useEffect(() => {
-    if (isServerPaginated) return;
+    if (isServerPaginated) {
+      console.log("[AffiliateReferrals][sync effect] skipped because isServerPaginated = true");
+      return;
+    }
 
     const nextItems = Array.isArray(initialItems) ? initialItems : EMPTY_ARRAY;
     const prevItems = Array.isArray(prevInitialRef.current)
@@ -92,7 +137,19 @@ const AffiliateReferrals = ({
     const isSameEmpty = nextItems.length === 0 && prevItems.length === 0;
     const isSameRef = prevInitialRef.current === initialItems;
 
+    console.log("[AffiliateReferrals][sync effect]", {
+      listKey,
+      nextCount: nextItems.length,
+      prevCount: prevItems.length,
+      isSameRef,
+      isSameEmpty,
+    });
+
     if (!isSameRef && !isSameEmpty) {
+      console.log("[AffiliateReferrals][sync effect] dispatching setListItems", {
+        type: listKey,
+        count: nextItems.length,
+      });
       dispatch(setListItems({ type: listKey, items: nextItems }));
     }
 
@@ -101,7 +158,25 @@ const AffiliateReferrals = ({
 
   const fetchData = useCallback(
     (page = 1, limit = 5, status = "") => {
-      if (!fetchUrl) return;
+      if (!fetchUrl) {
+        console.warn("[AffiliateReferrals][fetchData] fetchUrl is missing/null — API fetch cannot run!", {
+          isServerPaginated,
+          listKey,
+          page,
+          limit,
+          status,
+        });
+        return;
+      }
+
+      console.log("[AffiliateReferrals][fetchData] dispatching fetchPaginatedAffiliateList", {
+        fetchUrl,
+        type: listKey,
+        page,
+        limit,
+        status,
+      });
+
       dispatch(
         fetchPaginatedAffiliateList({
           fetchUrl,
@@ -112,11 +187,12 @@ const AffiliateReferrals = ({
         })
       );
     },
-    [dispatch, fetchUrl, listKey]
+    [dispatch, fetchUrl, listKey, isServerPaginated]
   );
 
   useEffect(() => {
     if (isServerPaginated) {
+      console.log("[AffiliateReferrals][initial fetch effect] calling fetchData(1, 5, '')");
       fetchData(1, 5, "");
     }
   }, [isServerPaginated, fetchData]);
@@ -256,16 +332,9 @@ const AffiliateReferrals = ({
   const statusOptions =
     availableStatuses.length > 0
       ? availableStatuses
-      : [
-          { value: "", label: "All" },
-          { value: "pending", label: "Pending" },
-          { value: "approved", label: "Approved" },
-          { value: "processing", label: "Processing" },
-          { value: "completed", label: "Completed" },
-          { value: "failed", label: "Failed" },
-          { value: "cancelled", label: "Cancelled" },
-          { value: "rejected", label: "Rejected" },
-        ];
+      : isReferral
+      ? DEFAULT_REFERRAL_STATUS_OPTIONS
+      : DEFAULT_WITHDRAWAL_STATUS_OPTIONS;
 
   const baseBtn =
     "flex items-center justify-center transition-all duration-200 rounded-lg";
@@ -380,6 +449,18 @@ const AffiliateReferrals = ({
                 const name = item.referredUser?.name || "Anonymous User";
                 const amount = formatAmount(item.amount);
                 const commission = Number(item.commission ?? 0);
+
+                console.log("[AffiliateReferrals][render item]", {
+                  index,
+                  id: item._id,
+                  type,
+                  name,
+                  amount,
+                  commission,
+                  status: item.status,
+                  createdAt: item.createdAt,
+                  item,
+                });
 
                 return (
                   <div

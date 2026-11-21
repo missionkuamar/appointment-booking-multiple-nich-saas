@@ -3,7 +3,7 @@ import Business from "../models/Business.js";
 import Slot from "../models/Slot.js";
 import { isValidTransition } from "../utils/appointmentStatus.js";
 import Doctor from "../models/Doctor.js";
-
+import { sendAppointmentUpdateNotification } from "../services/notify.service.js";
 
 
 // @desc    Doctor adds a walk-in / emergency patient
@@ -207,9 +207,19 @@ export const getStats = async (req, res) => {
 // @desc    Update appointment
 // @route   PATCH /api/appointments/:id
 export const updateAppointment = async (req, res) => {
+  console.log("[updateAppointment] Request received:", {
+    userId: req.user?.id,
+    appointmentId: req.params.id,
+    body: req.body,
+  });
+
   try {
     const business = await Business.findOne({ ownerId: req.user.id });
-    if (!business) return res.status(404).json({ message: "Business not found" });
+    if (!business) {
+      console.warn("[updateAppointment] Business not found for user:", req.user?.id);
+      return res.status(404).json({ message: "Business not found" });
+    }
+    console.log("[updateAppointment] Business found:", business._id);
 
     const { status, notes } = req.body;
 
@@ -217,7 +227,14 @@ export const updateAppointment = async (req, res) => {
       _id: req.params.id,
       businessId: business._id,
     });
-    if (!appt) return res.status(404).json({ message: "Appointment not found" });
+    if (!appt) {
+      console.warn("[updateAppointment] Appointment not found:", req.params.id);
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    const previousStatus = appt.status;
+    const previousNotes = appt.notes;
+    console.log("[updateAppointment] Current appointment status:", previousStatus);
 
     if (status) {
       if (!isValidTransition(appt.status, status)) {
@@ -226,17 +243,40 @@ export const updateAppointment = async (req, res) => {
         });
       }
       appt.status = status;
+      console.log("[updateAppointment] Status updated to:", status);
     }
-    if (notes !== undefined) appt.notes = notes;
+
+    if (notes !== undefined) {
+      appt.notes = notes;
+      console.log("[updateAppointment] Notes updated to:", notes);
+    }
 
     await appt.save();
+    console.log("[updateAppointment] Appointment saved:", appt._id);
 
-    if (["cancelled", "no_show"].includes(status) && appt.slotId) {
+    if (["cancelled", "rejected", "no_show"].includes(status) && appt.slotId) {
       await Slot.findByIdAndUpdate(appt.slotId, { isBooked: false });
+      console.log("[updateAppointment] Slot released:", appt.slotId);
     }
 
+    const hasChange =
+      (status && status !== previousStatus) ||
+      (notes !== undefined && notes !== previousNotes);
+
+    if (hasChange && appt.clientEmail) {
+      (async () => {
+        try {
+          await sendAppointmentUpdateNotification(business, appt, previousStatus);
+        } catch (e) {
+          console.error("[updateAppointment] Notify error:", e.message);
+        }
+      })();
+    }
+
+    console.log("[updateAppointment] Success response sent for appointment:", appt._id);
     res.json(appt);
   } catch (error) {
+    console.error("[updateAppointment] Error:", error.message);
     res.status(500).json({ message: error.message });
   }
 };

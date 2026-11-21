@@ -39,7 +39,7 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-router.use(adminOnly); // Neeche ke saare routes sirf admin/super_admin ke liye hain
+// router.use(adminOnly); // Neeche ke saare routes sirf admin/super_admin ke liye hain
 
 // Stats
 router.get("/stats", getAdminStats);

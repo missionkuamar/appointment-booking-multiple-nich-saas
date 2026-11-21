@@ -18,8 +18,8 @@ import affiliateRoutes from "./affiliate/affiliate.routes.js";
 import session from "express-session";
 import adminRouter from "./routes/admin.routes.js"
 import adminRoutes from "./routes/admin.routes.js";
-
-
+import adminWithdrawalRoutes from './affiliate/adminwithdrawalroutes.routes.js';
+import notificationRoutes from './affiliate/notification.routes.js';
 
 const app = express();
 
@@ -141,8 +141,8 @@ app.use("/api/plans", planRoutes);
 app.use("/api/affiliate", affiliateRoutes);
 app.use("/api", adminRouter);
 app.use("/api/admin", adminRoutes);
-
-
+app.use('/api/admin/withdrawals', adminWithdrawalRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 
 

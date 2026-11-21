@@ -27,3 +27,30 @@ export const protect = async (req, res, next) => {
     res.status(401).json({ message: "Token invalid" });
   }
 };
+
+
+
+// ============================================================
+// ✅ AUTHORIZE MIDDLEWARE (Role-Based Access Control)
+// ============================================================
+export const authorize = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized, please login first",
+      });
+    }
+
+    const userRole = req.user.role;
+
+    if (!allowedRoles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Role '${userRole}' is not allowed to access this resource.`,
+      });
+    }
+
+    next();
+  };
+};
