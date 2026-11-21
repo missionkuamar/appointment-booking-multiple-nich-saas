@@ -1,3 +1,5 @@
+// pages/PublicBooking.jsx
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api/axios";
@@ -6,6 +8,8 @@ import toast from "react-hot-toast";
 const PublicBooking = () => {
   const { slug } = useParams();
   const [business, setBusiness] = useState(null);
+  const [doctors, setDoctors] = useState([]);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const [dates, setDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [slots, setSlots] = useState([]);
@@ -16,39 +20,105 @@ const PublicBooking = () => {
     clientEmail: "",
     reason: "",
   });
-  // ✅ Custom fields ke liye state
   const [customData, setCustomData] = useState({});
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [loadingDates, setLoadingDates] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [success, setSuccess] = useState(null);
 
-  // Load business + dates
+  // 1. Load business + doctors
   useEffect(() => {
     const load = async () => {
+      console.log("🚀 [PublicBooking] Fetching business for slug:", slug);
       try {
         const biz = await api.get(`/public/${slug}`);
+        console.log("✅ [PublicBooking] Business Data:", biz.data);
         setBusiness(biz.data);
-
-        const d = await api.get(`/public/${slug}/dates`);
-        setDates(d.data);
+        setDoctors(biz.data.doctors || []);
       } catch (err) {
+        console.error("❌ [PublicBooking] Business load error:", err);
         toast.error("Business not found");
       }
     };
     load();
   }, [slug]);
 
-  // Load slots when date selected
+  // 2. Load dates when doctor selected (or "Any")
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!business) return;
+    
     const load = async () => {
-      const res = await api.get(
-        `/public/${slug}/slots?date=${selectedDate}`
-      );
-      setSlots(res.data);
+      setLoadingDates(true);
+      setSelectedDate("");
+      setSelectedSlot(null);
+      setSlots([]);
+
+      try {
+        const params = {};
+        // 🔴 FIX: Ensure doctorId is only added if a doctor is actually selected
+        if (selectedDoctor && selectedDoctor._id) {
+          params.doctorId = selectedDoctor._id;
+        }
+
+        console.log("📡 [PublicBooking] Fetching dates with params:", params);
+        const res = await api.get(`/public/${slug}/dates`, { params });
+        console.log("✅ [PublicBooking] Raw Dates Response:", res.data);
+
+        // Normalize response
+        const rawList = Array.isArray(res.data) ? res.data : res.data?.dates || res.data?.data || [];
+        const normalizedDates = rawList.map((item) =>
+          typeof item === "string"
+            ? { date: item, count: null }
+            : { date: item.date || item._id, count: item.count ?? null }
+        );
+
+        console.log("📅 [PublicBooking] Normalized Dates:", normalizedDates);
+        setDates(normalizedDates);
+
+        // Auto-select first date if available
+        if (normalizedDates.length > 0) {
+          setSelectedDate(normalizedDates[0].date);
+        }
+      } catch (err) {
+        console.error("❌ [PublicBooking] Dates fetch error:", err.response?.data || err);
+        setDates([]);
+      } finally {
+        setLoadingDates(false);
+      }
     };
     load();
-  }, [selectedDate, slug]);
+  }, [selectedDoctor, slug, business]);
+
+  // 3. Load slots when date + doctor selected
+  useEffect(() => {
+    if (!selectedDate) return;
+    
+    const load = async () => {
+      setLoadingSlots(true);
+      try {
+        const params = { date: selectedDate };
+        // 🔴 FIX: Ensure doctorId is only added if a doctor is actually selected
+        if (selectedDoctor && selectedDoctor._id) {
+          params.doctorId = selectedDoctor._id;
+        }
+
+        console.log("📡 [PublicBooking] Fetching slots with params:", params);
+        const res = await api.get(`/public/${slug}/slots`, { params });
+        console.log("✅ [PublicBooking] Raw Slots Response:", res.data);
+
+        const slotList = Array.isArray(res.data) ? res.data : res.data?.slots || res.data?.data || [];
+        setSlots(slotList);
+        setSelectedSlot(null);
+      } catch (err) {
+        console.error("❌ [PublicBooking] Slots fetch error:", err.response?.data || err);
+        setSlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    load();
+  }, [selectedDate, selectedDoctor, slug]);
 
   const handleBook = async (e) => {
     e.preventDefault();
@@ -58,15 +128,19 @@ const PublicBooking = () => {
     }
     setLoading(true);
     try {
-      // ✅ customData bhi bhejo
-      const res = await api.post(`/public/${slug}/book`, {
+      const payload = {
         slotId: selectedSlot._id,
+        doctorId: selectedDoctor?._id || selectedSlot.doctorId?._id || selectedSlot.doctorId,
         ...form,
         customData,
-      });
-      setSuccess(res.data.appointment);
+      };
+      console.log("📤 [PublicBooking] Booking payload:", payload);
+      const res = await api.post(`/public/${slug}/book`, payload);
+      console.log("🎉 [PublicBooking] Booking Success:", res.data);
+      setSuccess(res.data.appointment || res.data);
       toast.success("Booking confirmed!");
     } catch (err) {
+      console.error("❌ [PublicBooking] Booking failed:", err.response?.data || err);
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
@@ -83,6 +157,7 @@ const PublicBooking = () => {
 
   // Success screen
   if (success) {
+    const manageUrl = `${window.location.origin}/manage/${success.cancelToken}`;
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
         <div className="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full text-center">
@@ -103,8 +178,22 @@ const PublicBooking = () => {
             <p>
               <strong>👤 Name:</strong> {success.clientName}
             </p>
+            {(selectedDoctor || selectedSlot?.doctorId?.name) && (
+              <p>
+                <strong>🩺 Doctor:</strong>{" "}
+                {selectedDoctor?.name || selectedSlot?.doctorId?.name}
+              </p>
+            )}
           </div>
-          <p className="text-sm text-gray-500">
+          {success.cancelToken && (
+            <a
+              href={manageUrl}
+              className="inline-block bg-primary text-white px-6 py-2 rounded-lg font-medium hover:opacity-90"
+            >
+              Manage Appointment
+            </a>
+          )}
+          <p className="text-sm text-gray-500 mt-4">
             Confirmation email bhej diya gaya hai
           </p>
         </div>
@@ -144,47 +233,48 @@ const PublicBooking = () => {
         </div>
 
         <div className="bg-white p-6 rounded-2xl shadow-sm">
-          {/* STEP 1: Date + Time */}
+          {/* STEP 1: Doctor + Date + Time */}
           {step === 1 && (
             <>
-              {/* Staff selection (agar multiple staff hain) */}
-              {business.staff && business.staff.length > 0 && (
+              {/* Doctor selection */}
+              {doctors.length > 0 && (
                 <>
-                  <h2 className="text-xl font-bold mb-4">Select Staff</h2>
+                  <h2 className="text-xl font-bold mb-4">Select Doctor</h2>
                   <div className="grid grid-cols-2 gap-2 mb-6">
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedStaff(null);
-                        setSelectedDate("");
-                        setSelectedSlot(null);
-                      }}
+                      onClick={() => setSelectedDoctor(null)}
                       className={`p-3 rounded-xl border-2 text-center transition ${
-                        !selectedStaff
+                        !selectedDoctor
                           ? "border-primary bg-indigo-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >
                       <div className="font-bold text-sm">Any Available</div>
+                      <div className="text-xs text-gray-500">Fastest slot</div>
                     </button>
-                    {business.staff.map((s) => (
+                    {doctors.map((doc) => (
                       <button
-                        key={s._id}
+                        key={doc._id}
                         type="button"
-                        onClick={() => {
-                          setSelectedStaff(s._id);
-                          setSelectedDate("");
-                          setSelectedSlot(null);
-                        }}
+                        onClick={() => setSelectedDoctor(doc)}
                         className={`p-3 rounded-xl border-2 text-center transition ${
-                          selectedStaff === s._id
+                          selectedDoctor?._id === doc._id
                             ? "border-primary bg-indigo-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <div className="font-bold text-sm">
-                          {s.staffTitle} {s.name}
-                        </div>
+                        <div className="font-bold text-sm">{doc.name}</div>
+                        {doc.specialization && (
+                          <div className="text-xs text-gray-500">
+                            {doc.specialization}
+                          </div>
+                        )}
+                        {doc.consultationFee > 0 && (
+                          <div className="text-xs text-primary mt-1">
+                            ₹{doc.consultationFee}
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -193,7 +283,11 @@ const PublicBooking = () => {
 
               <h2 className="text-xl font-bold mb-4">Select Date</h2>
 
-              {dates.length === 0 ? (
+              {loadingDates ? (
+                <p className="text-gray-500 text-center py-6">
+                  Loading available dates...
+                </p>
+              ) : dates.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
                   Abhi koi slot available nahi hai
                 </p>
@@ -211,14 +305,16 @@ const PublicBooking = () => {
                       }`}
                     >
                       <div className="font-bold text-sm">
-                        {new Date(d.date).toLocaleDateString("en-IN", {
+                        {new Date(d.date + "T00:00:00").toLocaleDateString("en-IN", {
                           day: "numeric",
                           month: "short",
                         })}
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {d.count} slots
-                      </div>
+                      {d.count !== null && (
+                        <div className="text-xs text-gray-500">
+                          {d.count} slots
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -227,7 +323,11 @@ const PublicBooking = () => {
               {selectedDate && (
                 <>
                   <h2 className="text-xl font-bold mb-4">Select Time</h2>
-                  {slots.length === 0 ? (
+                  {loadingSlots ? (
+                    <p className="text-gray-500 text-center py-4">
+                      Loading slots...
+                    </p>
+                  ) : slots.length === 0 ? (
                     <p className="text-gray-500 text-center py-4">
                       Is din koi slot nahi hai
                     </p>
@@ -247,9 +347,9 @@ const PublicBooking = () => {
                           <div className="font-bold text-sm">
                             {s.startTime}
                           </div>
-                          {s.staffId?.name && (
+                          {s.doctorId?.name && (
                             <div className="text-xs text-gray-500">
-                              {s.staffId.name}
+                              {s.doctorId.name}
                             </div>
                           )}
                         </button>
@@ -273,14 +373,13 @@ const PublicBooking = () => {
           {/* STEP 2: Details */}
           {step === 2 && (
             <form onSubmit={handleBook}>
-              <h2 className="text-xl font-bold mb-4">
-                Your Details
-              </h2>
+              <h2 className="text-xl font-bold mb-4">Your Details</h2>
 
               <div className="bg-indigo-50 p-3 rounded-xl mb-4 text-sm">
                 📅 {selectedDate} at 🕐 {selectedSlot?.startTime}
-                {selectedSlot?.staffId?.name && (
-                  <> with 👨‍⚕️ {selectedSlot.staffId.name}</>
+                {selectedDoctor && <> with 🩺 {selectedDoctor.name}</>}
+                {!selectedDoctor && selectedSlot?.doctorId?.name && (
+                  <> with 🩺 {selectedSlot.doctorId.name}</>
                 )}
               </div>
 
@@ -315,7 +414,7 @@ const PublicBooking = () => {
                   className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
                 />
 
-                {/* ✅ Custom Fields — YAHAN RENDER HO RAHE HAIN */}
+                {/* Custom Fields */}
                 {business.customFields && business.customFields.length > 0 && (
                   <>
                     {business.customFields.map((field) => (

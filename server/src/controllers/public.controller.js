@@ -3,11 +3,23 @@ import Business from "../models/Business.js";
 import Slot from "../models/Slot.js";
 import Appointment from "../models/Appointment.js";
 import User from "../models/User.js";
+import Doctor from "../models/Doctor.js";
+import Holiday from "../models/Holiday.js";
+import mongoose from "mongoose";
 import {
   sendOwnerNotification,
   sendClientNotification,
   sendRescheduleNotification,
 } from "../services/notify.service.js";
+
+// Helper
+const todayStr = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+};
 
 // @desc    Get business by slug
 // @route   GET /api/public/:slug
@@ -16,12 +28,10 @@ export const getBusinessBySlug = async (req, res) => {
     const business = await Business.findOne({ slug: req.params.slug });
     if (!business) return res.status(404).json({ message: "Business not found" });
 
-    // Get active staff
-    const staff = await User.find({
+    const doctors = await Doctor.find({
       businessId: business._id,
-      role: "staff",
       isActive: true,
-    }).select("name staffTitle _id");
+    }).select("name specialization qualification consultationFee department avatarUrl");
 
     res.json({
       _id: business._id,
@@ -33,80 +43,109 @@ export const getBusinessBySlug = async (req, res) => {
       phone: business.phone,
       labels: business.labels,
       customFields: business.customFields.filter((f) => f.isActive),
-      staff,
+      doctors,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get available dates
+// / @desc    Get available dates (Doctor Specific or Any)
 // @route   GET /api/public/:slug/dates
+// 1. formatDate helper function file ke top par define karein
+const formatDate = (d) => {
+  const date = new Date(d);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
 export const getAvailableDates = async (req, res) => {
   try {
     const { slug } = req.params;
-    const { staffId } = req.query;
+    const { doctorId } = req.query;
 
     const business = await Business.findOne({ slug });
     if (!business) return res.status(404).json({ message: "Business not found" });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const todayStr = formatDate(today);
 
     const filter = {
       businessId: business._id,
       date: { $gte: todayStr },
       isBooked: false,
+      isBlocked: false,
     };
 
-    if (staffId) filter.staffId = staffId;
+    // 2. Aggregate mein ObjectId conversion zaroori hai
+    if (
+      doctorId &&
+      doctorId !== "null" &&
+      doctorId !== "undefined" &&
+      mongoose.Types.ObjectId.isValid(doctorId)
+    ) {
+      filter.doctorId = new mongoose.Types.ObjectId(doctorId);
+    }
 
-    const slots = await Slot.find(filter);
+    console.log(`📡 [API] Fetching dates for Doctor: ${doctorId || "Any"}`);
 
-    const dateCount = {};
-    slots.forEach((s) => {
-      dateCount[s.date] = (dateCount[s.date] || 0) + 1;
-    });
+    const result = await Slot.aggregate([
+      { $match: filter },
+      { $group: { _id: "$date", count: { $sum: 1 } } },
+      { $sort: { _id: 1 } },
+    ]);
 
-    const dates = Object.keys(dateCount)
-      .sort()
-      .map((date) => ({ date, count: dateCount[date] }));
+    const dates = result.map((r) => ({ date: r._id, count: r.count }));
+    console.log(`✅ [API] Found ${dates.length} dates`);
 
     res.json(dates);
   } catch (error) {
+    console.error("❌ [API] getAvailableDates Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get available slots for date
+// @desc    Get available slots (Doctor Specific or Any)
 // @route   GET /api/public/:slug/slots
 export const getAvailableSlots = async (req, res) => {
   try {
     const { slug } = req.params;
-    const { date, staffId } = req.query;
+    const { date, doctorId } = req.query;
 
     if (!date) return res.status(400).json({ message: "date required" });
 
     const business = await Business.findOne({ slug });
     if (!business) return res.status(404).json({ message: "Business not found" });
 
-    const filter = { businessId: business._id, date, isBooked: false };
-    if (staffId) filter.staffId = staffId;
+    let filter = {
+      businessId: business._id,
+      date: date,
+      isBooked: false,
+      isBlocked: false,
+    };
+
+    if (doctorId && doctorId !== "null" && doctorId !== "undefined") {
+      filter.doctorId = doctorId;
+    }
+
+    console.log(`📡 [API] Fetching slots for Date: ${date}, Doctor: ${doctorId || 'Any'}`);
 
     const slots = await Slot.find(filter)
-      .populate("staffId", "name staffTitle")
+      .populate("doctorId", "name specialization")
       .sort({ startTime: 1 });
 
+    console.log(`✅ [API] Found ${slots.length} slots`);
     res.json(slots);
   } catch (error) {
+    console.error("❌ [API] getAvailableSlots Error:", error);
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Book appointment
+// @desc    Book appointment (ATOMIC)
 // @route   POST /api/public/:slug/book
 export const bookAppointment = async (req, res) => {
   try {
@@ -129,56 +168,86 @@ export const bookAppointment = async (req, res) => {
     const business = await Business.findOne({ slug });
     if (!business) return res.status(404).json({ message: "Business not found" });
 
-    const slot = await Slot.findById(slotId);
-    if (!slot) return res.status(404).json({ message: "Slot not found" });
-    if (slot.isBooked)
-      return res.status(400).json({ message: "Slot already booked" });
+    // Atomic slot reservation
+    const slot = await Slot.findOneAndUpdate(
+      {
+        _id: slotId,
+        businessId: business._id,
+        isBooked: false,
+        isBlocked: false,
+      },
+      { isBooked: true },
+      { new: true }
+    );
 
-    // Generate cancel token
+    if (!slot) {
+      return res
+        .status(409)
+        .json({ message: "Slot already booked or unavailable" });
+    }
+
+    // Holiday check
+    const holiday = await Holiday.findOne({
+      businessId: business._id,
+      date: slot.date,
+      $or: [{ doctorId: slot.doctorId }, { doctorId: null }],
+    });
+    if (holiday) {
+      await Slot.findByIdAndUpdate(slot._id, { isBooked: false });
+      return res.status(400).json({ message: "Clinic closed on this date" });
+    }
+
     const cancelToken = crypto.randomBytes(20).toString("hex");
 
-    const appointment = await Appointment.create({
-      businessId: business._id,
-      staffId: slot.staffId || null,
-      slotId: slot._id,
-      clientName,
-      clientPhone,
-      clientEmail: clientEmail || "",
-      reason: reason || "",
-      date: slot.date,
-      time: slot.startTime,
-      status: "pending",
-      customData,
-      cancelToken,
-    });
+    try {
+      const appointment = await Appointment.create({
+        businessId: business._id,
+        doctorId: slot.doctorId || null,
+        slotId: slot._id,
+        clientName,
+        clientPhone,
+        clientEmail: clientEmail || "",
+        reason: reason || "",
+        date: slot.date,
+        time: slot.startTime,
+        status: "pending",
+        customData,
+        cancelToken,
+      });
 
-    slot.isBooked = true;
-    await slot.save();
+      // Fire-and-forget notifications
+      (async () => {
+        try {
+          const owner = await User.findById(business.ownerId);
+          if (owner?.email) await sendOwnerNotification(business, appointment, owner.email);
+          await sendClientNotification(business, appointment);
+        } catch (e) {
+          console.error("Notify error:", e.message);
+        }
+      })();
 
-    // Notifications
-    const owner = await User.findById(business.ownerId);
-    if (owner?.email) {
-      sendOwnerNotification(business, appointment, owner.email);
+      return res.status(201).json({
+        message: "Appointment booked!",
+        appointment: {
+          _id: appointment._id,
+          date: appointment.date,
+          time: appointment.time,
+          clientName: appointment.clientName,
+          status: appointment.status,
+          cancelToken: appointment.cancelToken,
+        },
+      });
+    } catch (err) {
+      // Rollback
+      await Slot.findByIdAndUpdate(slot._id, { isBooked: false });
+      throw err;
     }
-    sendClientNotification(business, appointment);
-
-    res.status(201).json({
-      message: "Appointment booked!",
-      appointment: {
-        _id: appointment._id,
-        date: appointment.date,
-        time: appointment.time,
-        clientName: appointment.clientName,
-        status: appointment.status,
-        cancelToken: appointment.cancelToken,
-      },
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// @desc    Get appointment by cancel token
+// @desc    Get by token
 // @route   GET /api/public/manage/:token
 export const getByToken = async (req, res) => {
   try {
@@ -188,19 +257,13 @@ export const getByToken = async (req, res) => {
 
     if (!appt) return res.status(404).json({ message: "Appointment not found" });
 
-    // Get available slots (for reschedule)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = `${today.getFullYear()}-${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-
     const filter = {
       businessId: appt.businessId._id,
-      date: { $gte: todayStr },
+      date: { $gte: todayStr() },
       isBooked: false,
+      isBlocked: false,
     };
-    if (appt.staffId) filter.staffId = appt.staffId;
+    if (appt.doctorId) filter.doctorId = appt.doctorId;
 
     const availableSlots = await Slot.find(filter).sort({
       date: 1,
@@ -228,16 +291,18 @@ export const getByToken = async (req, res) => {
   }
 };
 
-// @desc    Cancel appointment by token
+// @desc    Cancel by token
 // @route   POST /api/public/manage/:token/cancel
 export const cancelByToken = async (req, res) => {
   try {
     const appt = await Appointment.findOne({ cancelToken: req.params.token });
     if (!appt) return res.status(404).json({ message: "Appointment not found" });
 
-    if (appt.status === "cancelled") {
+    if (appt.status === "cancelled")
       return res.status(400).json({ message: "Already cancelled" });
-    }
+
+    if (appt.date < todayStr())
+      return res.status(400).json({ message: "Cannot cancel past appointment" });
 
     appt.status = "cancelled";
     await appt.save();
@@ -250,7 +315,7 @@ export const cancelByToken = async (req, res) => {
   }
 };
 
-// @desc    Reschedule appointment by token
+// @desc    Reschedule by token (atomic)
 // @route   POST /api/public/manage/:token/reschedule
 export const rescheduleByToken = async (req, res) => {
   try {
@@ -259,37 +324,47 @@ export const rescheduleByToken = async (req, res) => {
     const appt = await Appointment.findOne({ cancelToken: req.params.token });
     if (!appt) return res.status(404).json({ message: "Appointment not found" });
 
-    if (appt.status === "cancelled") {
+    if (appt.status === "cancelled")
       return res.status(400).json({ message: "Cannot reschedule cancelled" });
-    }
 
-    const newSlot = await Slot.findById(newSlotId);
-    if (!newSlot) return res.status(404).json({ message: "New slot not found" });
-    if (newSlot.isBooked)
-      return res.status(400).json({ message: "New slot already booked" });
+    if (appt.date < todayStr())
+      return res
+        .status(400)
+        .json({ message: "Cannot reschedule past appointment" });
+
+    const newSlot = await Slot.findOneAndUpdate(
+      { _id: newSlotId, isBooked: false, isBlocked: false },
+      { isBooked: true },
+      { new: true }
+    );
+
+    if (!newSlot)
+      return res.status(400).json({ message: "New slot unavailable" });
 
     // Free old slot
     await Slot.findByIdAndUpdate(appt.slotId, { isBooked: false });
 
-    // Book new slot
-    newSlot.isBooked = true;
-    await newSlot.save();
-
-    // Update appointment
     appt.slotId = newSlot._id;
     appt.date = newSlot.date;
     appt.time = newSlot.startTime;
     appt.status = "pending";
     await appt.save();
 
-    // Notify
-    const business = await Business.findById(appt.businessId);
-    if (business && appt.clientEmail) {
-      sendRescheduleNotification(business, appt);
-    }
+    (async () => {
+      try {
+        const business = await Business.findById(appt.businessId);
+        if (business && appt.clientEmail) {
+          await sendRescheduleNotification(business, appt);
+        }
+      } catch (e) {
+        console.error("Notify error:", e.message);
+      }
+    })();
 
     res.json({ message: "Rescheduled!", appointment: appt });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+

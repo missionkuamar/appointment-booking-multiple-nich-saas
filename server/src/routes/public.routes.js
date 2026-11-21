@@ -1,25 +1,28 @@
 import express from "express";
 import {
   getBusinessBySlug,
-  getAvailableSlots,
   getAvailableDates,
+  getAvailableSlots,
   bookAppointment,
   getByToken,
   cancelByToken,
   rescheduleByToken,
 } from "../controllers/public.controller.js";
+import {
+  bookingLimiter,
+  publicLimiter,
+} from "../middleware/rateLimit.middleware.js";
 
 const router = express.Router();
 
-// Manage routes FIRST (before /:slug)
-router.get("/manage/:token", getByToken);
-router.post("/manage/:token/cancel", cancelByToken);
-router.post("/manage/:token/reschedule", rescheduleByToken);
+// manage routes first (avoid slug clash)
+router.get("/manage/:token", publicLimiter, getByToken);
+router.post("/manage/:token/cancel", bookingLimiter, cancelByToken);
+router.post("/manage/:token/reschedule", bookingLimiter, rescheduleByToken);
 
-// Business routes
-router.get("/:slug", getBusinessBySlug);
-router.get("/:slug/dates", getAvailableDates);
-router.get("/:slug/slots", getAvailableSlots);
-router.post("/:slug/book", bookAppointment);
+router.get("/:slug", publicLimiter, getBusinessBySlug);
+router.get("/:slug/dates", publicLimiter, getAvailableDates);
+router.get("/:slug/slots", publicLimiter, getAvailableSlots);
+router.post("/:slug/book", bookingLimiter, bookAppointment);
 
 export default router;

@@ -21,6 +21,15 @@ const businessSchema = new mongoose.Schema(
       clientLabel: { type: String, default: "Client" },
       serviceLabel: { type: String, default: "Service" },
     },
+    razorpaySubscriptionId: { type: String, default: null },
+subscriptionPlan: { type: String, enum: ["basic", "pro", "enterprise", null], default: null },
+subscriptionStatus: { 
+  type: String, 
+  enum: ["created", "active", "cancelled", "expired", "halted"], 
+  default: null 
+},
+subscriptionEndDate: { type: Date, default: null },
+
     // Custom fields for booking form
     customFields: [
       {

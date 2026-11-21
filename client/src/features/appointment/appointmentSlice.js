@@ -3,23 +3,26 @@ import api from "../../api/axios";
 
 export const fetchMyAppointments = createAsyncThunk(
   "appointment/fetchMy",
-  async ({ status = "all", staffId } = {}, { rejectWithValue }) => {
+  async ({ status = "all", doctorId, page = 1, limit = 10 } = {}, { rejectWithValue }) => {
     try {
-      let url = `/appointments/my?status=${status}`;
-      if (staffId) url += `&staffId=${staffId}`;
-      const { data } = await api.get(url);
-      return data;
+      const params = new URLSearchParams({ status, page, limit });
+      if (doctorId) params.append("doctorId", doctorId);
+      
+      const { data } = await api.get(`/appointments/my?${params}`);
+      return data; 
+      // Returns: { data: [...], pagination: { page, limit, total, totalPages } }
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed");
     }
   }
 );
 
+// fetchStats mein range add karo
 export const fetchStats = createAsyncThunk(
   "appointment/stats",
-  async (_, { rejectWithValue }) => {
+  async (range = "7", { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/appointments/stats");
+      const { data } = await api.get(`/appointments/stats?range=${range}`);
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Failed");
@@ -44,6 +47,7 @@ export const updateAppointment = createAsyncThunk(
 
 const initialState = {
   list: [],
+   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
   stats: null,
   loading: false,
   statsLoading: false,
@@ -56,16 +60,17 @@ const appointmentSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchMyAppointments.pending, (state) => {
-        state.loading = true;
+      .addCase(fetchMyAppointments.pending, (s) => {
+        s.loading = true;
       })
-      .addCase(fetchMyAppointments.fulfilled, (state, action) => {
-        state.loading = false;
-        state.list = action.payload;
+      .addCase(fetchMyAppointments.fulfilled, (s, a) => {
+        s.loading = false;
+        s.list = a.payload.data;
+        s.pagination = a.payload.pagination;
       })
-      .addCase(fetchMyAppointments.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
+      .addCase(fetchMyAppointments.rejected, (s, a) => {
+        s.loading = false;
+        s.error = a.payload;
       })
 
       .addCase(fetchStats.pending, (state) => {

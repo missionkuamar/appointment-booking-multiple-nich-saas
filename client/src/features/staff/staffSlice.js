@@ -3,12 +3,14 @@ import api from "../../api/axios";
 
 export const fetchMyStaff = createAsyncThunk(
   "staff/fetch",
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/staff");
+      const { data } = await api.get("/staff", { params });
       return data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch staff"
+      );
     }
   }
 );
@@ -20,7 +22,9 @@ export const addStaff = createAsyncThunk(
       const { data } = await api.post("/staff", payload);
       return data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to add staff"
+      );
     }
   }
 );
@@ -32,7 +36,9 @@ export const updateStaff = createAsyncThunk(
       const { data } = await api.patch(`/staff/${id}`, payload);
       return data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to update staff"
+      );
     }
   }
 );
@@ -44,13 +50,22 @@ export const deleteStaff = createAsyncThunk(
       await api.delete(`/staff/${id}`);
       return id;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed");
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to delete staff"
+      );
     }
   }
 );
 
 const initialState = {
   list: [],
+  availableTitles: [],
+  pagination: {
+    page: 1,
+    limit: 6,
+    total: 0,
+    totalPages: 1,
+  },
   loading: false,
   error: null,
 };
@@ -63,27 +78,53 @@ const staffSlice = createSlice({
     builder
       .addCase(fetchMyStaff.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchMyStaff.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        if (Array.isArray(action.payload)) {
+          state.list = action.payload;
+        } else {
+          state.list = action.payload?.data || [];
+          state.availableTitles = action.payload?.availableTitles || [];
+          if (action.payload?.pagination) {
+            state.pagination = action.payload.pagination;
+          }
+        }
       })
       .addCase(fetchMyStaff.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
+      .addCase(addStaff.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(addStaff.fulfilled, (state, action) => {
-        state.list.push(action.payload);
+        state.loading = false;
+        state.list.unshift(action.payload);
+        state.pagination.total += 1;
+      })
+      .addCase(addStaff.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
 
       .addCase(updateStaff.fulfilled, (state, action) => {
         const idx = state.list.findIndex((s) => s._id === action.payload._id);
         if (idx !== -1) state.list[idx] = action.payload;
       })
+      .addCase(updateStaff.rejected, (state, action) => {
+        state.error = action.payload;
+      })
 
       .addCase(deleteStaff.fulfilled, (state, action) => {
         state.list = state.list.filter((s) => s._id !== action.payload);
+        state.pagination.total = Math.max(state.pagination.total - 1, 0);
+      })
+      .addCase(deleteStaff.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });

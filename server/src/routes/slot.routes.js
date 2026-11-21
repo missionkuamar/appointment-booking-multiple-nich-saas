@@ -3,13 +3,27 @@ import {
   generateSlots,
   getMySlots,
   clearSlots,
+  generateMySlots,
 } from "../controllers/slot.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
+import { getDoctorSchedule } from "../controllers/slot.controller.js";
+
+
 
 const router = express.Router();
 
-router.post("/generate", protect, generateSlots);
+router.post(
+  "/generate",
+  (req, res, next) => {
+    console.log("\n📥 [Route Hit] POST /api/slots/generate | Body:", req.body);
+    next();
+  },
+  protect,
+  generateSlots
+);
+router.post("/my-generate", protect, generateMySlots);
 router.get("/my", protect, getMySlots);
 router.delete("/clear", protect, clearSlots);
+router.get("/my-schedule", protect, getDoctorSchedule);
 
 export default router;

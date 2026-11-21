@@ -1,42 +1,129 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../features/auth/authSlice";
 import { fetchMyBusiness } from "../features/business/businessSlice";
 import toast from "react-hot-toast";
+import { themes } from "../constants/themes";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { loading } = useSelector((state) => state.auth);
+
+  const theme = localStorage.getItem("dashboard-theme") || "day";
+  const t = themes[theme] || themes.day;
+
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const ref = params.get("ref")?.trim();
+      console.log("[Login:refEffect] Query search:", location.search, "| Extracted ref:", ref || "NONE");
+
+      if (ref) {
+        localStorage.setItem("affiliateRef", ref);
+        console.log("[Login:refEffect] Saved affiliateRef to localStorage:", ref);
+      }
+    } catch (error) {
+      console.error("❌ [Login:refEffect] Failed to save affiliate ref:", error);
+    }
+  }, [location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await dispatch(loginUser(form));
 
-    if (loginUser.fulfilled.match(result)) {
-      toast.success("Welcome back!");
+    const affiliateRef = localStorage.getItem("affiliateRef") || "";
+    console.log("🚀 [Login:handleSubmit] Submitting login:", {
+      email: form.email,
+      hasPassword: !!form.password,
+      affiliateRef: affiliateRef || "NONE",
+    });
 
-      // Check if business exists
-      const bizRes = await dispatch(fetchMyBusiness());
-      if (fetchMyBusiness.fulfilled.match(bizRes)) {
-        navigate("/dashboard");
+    try {
+      const result = await dispatch(
+        loginUser({
+          ...form,
+          ref: affiliateRef,
+        })
+      );
+
+      console.log("📦 [Login:handleSubmit] loginUser result:", {
+        fulfilled: loginUser.fulfilled.match(result),
+        rejected: loginUser.rejected.match(result),
+        payload: result.payload,
+      });
+
+      if (loginUser.fulfilled.match(result)) {
+        if (affiliateRef) {
+          localStorage.removeItem("affiliateRef");
+          console.log("🧹 [Login:handleSubmit] Cleared affiliateRef from localStorage");
+        }
+
+        const user = result.payload?.user || result.payload || {};
+        const userRole = user.role || "owner";
+        console.log("👤 [Login:handleSubmit] Resolved user & role:", {
+          userId: user._id || user.id,
+          userRole,
+        });
+
+        toast.success("Welcome back!");
+
+        if (userRole === "super_admin") {
+          console.log("➡️ [Login:handleSubmit] Navigating to /superadmin/users");
+          navigate("/superadmin", { replace: true });
+          return;
+        }
+
+        if (userRole === "admin") {
+          console.log("➡️ [Login:handleSubmit] Navigating to /admin/users");
+          navigate("/admin", { replace: true });
+          return;
+        }
+
+        if (userRole === "staff") {
+          console.log("➡️ [Login:handleSubmit] Navigating to /doctor-dashboard");
+          navigate("/doctor-dashboard", { replace: true });
+          return;
+        }
+
+        console.log("🏢 [Login:handleSubmit] Owner role detected -> fetching business...");
+        const bizRes = await dispatch(fetchMyBusiness());
+        console.log("📦 [Login:handleSubmit] fetchMyBusiness result:", {
+          fulfilled: fetchMyBusiness.fulfilled.match(bizRes),
+          payload: bizRes.payload,
+          error: bizRes.error,
+        });
+
+        if (fetchMyBusiness.fulfilled.match(bizRes)) {
+          console.log("➡️ [Login:handleSubmit] Business found -> navigating to /dashboard");
+          navigate("/dashboard", { replace: true });
+        } else {
+          console.warn("⚠️ [Login:handleSubmit] Business not found -> navigating to /onboarding");
+          navigate("/onboarding", { replace: true });
+        }
       } else {
-        navigate("/onboarding");
+        console.warn("⚠️ [Login:handleSubmit] Login failed:", result.payload || result.error);
+        toast.error(result.payload || "Login failed");
       }
-    } else {
-      toast.error(result.payload || "Login failed");
+    } catch (error) {
+      console.error("❌ [Login:handleSubmit] Unexpected error:", error);
+      toast.error("Something went wrong during login");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold text-center mb-2">Welcome Back</h1>
-        <p className="text-center text-gray-500 mb-6">
-          Login to your dashboard
-        </p>
+    <div
+      className={`min-h-screen ${t.page} flex items-center justify-center px-4 transition-colors duration-300`}
+    >
+      <div
+        className={`w-full max-w-md rounded-2xl border ${t.card} ${t.border} p-8 shadow-lg`}
+      >
+        <h1 className={`text-3xl font-bold text-center mb-2 ${t.text}`}>
+          Welcome Back
+        </h1>
+        <p className={`text-center mb-6 ${t.muted}`}>Login to your dashboard</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -44,7 +131,7 @@ const Login = () => {
             placeholder="Email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className={`w-full px-4 py-3 border ${t.border} ${t.soft} ${t.text} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
           />
           <input
@@ -52,21 +139,21 @@ const Login = () => {
             placeholder="Password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            className={`w-full px-4 py-3 border ${t.border} ${t.soft} ${t.text} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`}
             required
           />
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
+            className={`w-full ${t.accent} text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50`}
           >
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        <p className="text-center mt-6 text-gray-600">
+        <p className={`text-center mt-6 ${t.muted}`}>
           New here?{" "}
-          <Link to="/register" className="text-primary font-semibold">
+          <Link to="/register" className={`${t.accentText} font-semibold`}>
             Create account
           </Link>
         </p>
