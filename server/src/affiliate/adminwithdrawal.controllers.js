@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import AffiliateWithdrawal from "./AffiliateWithdrawal.models.js";
 import Affiliate from "./affiliate.models.js";
-import User from "../models/User.js";
+import User from "../models/user.js";
 import Notification from "./Notification.models.js";
 
 const ALLOWED_LIMITS = [5, 10, 20, 50, 100, 200];
