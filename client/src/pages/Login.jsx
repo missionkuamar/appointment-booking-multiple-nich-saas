@@ -71,13 +71,13 @@ const Login = () => {
         toast.success("Welcome back!");
 
         if (userRole === "super_admin") {
-          console.log("➡️ [Login:handleSubmit] Navigating to /superadmin/users");
-          navigate("/superadmin", { replace: true });
+          console.log("➡️ [Login:handleSubmit] Navigating to /admin/super_admin");
+          navigate("/admin/super_admin", { replace: true });
           return;
         }
 
         if (userRole === "admin") {
-          console.log("➡️ [Login:handleSubmit] Navigating to /admin/users");
+          console.log("➡️ [Login:handleSubmit] Navigating to /admin");
           navigate("/admin", { replace: true });
           return;
         }
@@ -120,6 +120,17 @@ const Login = () => {
       <div
         className={`w-full max-w-md rounded-2xl border ${t.card} ${t.border} p-8 shadow-lg`}
       >
+        {/* Back to Landing Page Link */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className={`inline-flex items-center gap-1.5 text-sm font-medium ${t.muted} hover:${t.text} transition`}
+          >
+            <span aria-hidden="true">←</span>
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
         <h1 className={`text-3xl font-bold text-center mb-2 ${t.text}`}>
           Welcome Back
         </h1>

@@ -81,6 +81,17 @@ const Register = () => {
       <div
         className={`w-full max-w-md rounded-2xl border ${t.card} ${t.border} p-8 shadow-lg`}
       >
+        {/* Back to Landing Page Link */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className={`inline-flex items-center gap-1.5 text-sm font-medium ${t.muted} hover:${t.text} transition`}
+          >
+            <span aria-hidden="true">←</span>
+            <span>Back to Home</span>
+          </Link>
+        </div>
+
         <h1 className={`text-3xl font-bold text-center mb-2 ${t.text}`}>
           Create Account
         </h1>

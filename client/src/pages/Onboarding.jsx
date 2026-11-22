@@ -6,11 +6,11 @@ import toast from "react-hot-toast";
 
 const industries = [
   { value: "clinic", label: "🏥 Clinic / Doctor", placeholder: "e.g. Sharma Clinic" },
-  { value: "salon", label: "💇 Salon / Spa", placeholder: "e.g. Glamour Studio" },
-  { value: "tutor", label: "📚 Tutor / Coaching", placeholder: "e.g. Maths Academy" },
-  { value: "physio", label: "🦴 Physiotherapy", placeholder: "e.g. Care Physio" },
-  { value: "lawyer", label: "⚖️ Lawyer / Advocate", placeholder: "e.g. Verma & Associates" },
-  { value: "other", label: "🔧 Other Business", placeholder: "e.g. My Business" },
+  // { value: "salon", label: "💇 Salon / Spa", placeholder: "e.g. Glamour Studio" },
+  // { value: "tutor", label: "📚 Tutor / Coaching", placeholder: "e.g. Maths Academy" },
+  // { value: "physio", label: "🦴 Physiotherapy", placeholder: "e.g. Care Physio" },
+  // { value: "lawyer", label: "⚖️ Lawyer / Advocate", placeholder: "e.g. Verma & Associates" },
+  // { value: "other", label: "🔧 Other Business", placeholder: "e.g. My Business" },
 ];
 
 const Onboarding = () => {

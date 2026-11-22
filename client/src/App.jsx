@@ -17,6 +17,7 @@ import Loader from "./components/Loader";
 import AdminLayout from "./pages/AdminLayout";
 
 // Public Pages
+import LandingPage from "./pages/LandingPage";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import PublicBooking from "./pages/PublicBooking";
@@ -59,7 +60,6 @@ export const AffiliateRedirect = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ref = params.get("ref");
-    console.log("[AffiliateRedirect] params:", { slug, ref });
     if (ref) localStorage.setItem("affiliateRef", ref);
     navigate("/login", { replace: true });
   }, [slug, location.search, navigate]);
@@ -75,60 +75,31 @@ function App() {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user, token, initialized } = useSelector((state) => state.auth || {});
-  const businessState = useSelector((state) => state.business || {});
-
-  console.log("[App] Render:", {
-    pathname: location.pathname,
-    hasUser: Boolean(user),
-    userId: user?._id || user?.id,
-    userRole: user?.role,
-    hasToken: Boolean(token),
-    initialized,
-    businessId: businessState?.data?._id,
-    businessSlug: businessState?.data?.slug,
-  });
 
   useEffect(() => {
-    console.log("[App:authEffect] triggered:", {
-      hasToken: Boolean(token),
-      hasUser: Boolean(user),
-      initialized,
-      pathname: location.pathname,
-    });
-
     if (token && !user) {
-      console.log("[App:authEffect] Dispatching fetchMe()");
       dispatch(fetchMe()).then((res) => {
-        console.log("[App:authEffect] fetchMe result:", {
-          type: res?.type,
-          fulfilled: fetchMe.fulfilled.match(res),
-        });
         if (fetchMe.fulfilled.match(res)) {
-          console.log("[App:authEffect] Dispatching fetchMyBusiness()");
           dispatch(fetchMyBusiness());
         }
       });
     } else if (token && user) {
-      console.log("[App:authEffect] Token & user present -> dispatching fetchMyBusiness()");
       dispatch(fetchMyBusiness());
     } else if (!token) {
-      console.warn("[App:authEffect] No token -> dispatching auth/fetchMe/rejected");
       dispatch({ type: "auth/fetchMe/rejected" });
     }
-  }, [dispatch, token, user, initialized, location.pathname]);
+  }, [dispatch, token, user]);
 
   if (token && !initialized) {
-    console.log("[App] Showing Loader because token exists and !initialized");
     return <Loader />;
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-
-      {/* Public */}
       <Route path="/book/:slug" element={<PublicBooking />} />
       <Route path="/booking-confirmed" element={<BookingConfirmation />} />
       <Route path="/manage/:token" element={<RescheduleBooking />} />
@@ -153,14 +124,7 @@ function App() {
         <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
         <Route path="withdrawals" element={<AdminWithdrawals />} />
         <Route path="notifications" element={<AdminNotifications />} />
-        <Route
-          path="affiliate"
-          element={
-            <ProtectedRoute>
-              <AffiliateDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="affiliate" element={<AffiliateDashboard />} />
         <Route path="super_admin" element={<SuperAdminUsersPage />} />
       </Route>
 
@@ -256,7 +220,8 @@ function App() {
         }
       />
 
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

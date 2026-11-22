@@ -3,28 +3,36 @@ import { useSelector } from "react-redux";
 import Loader from "./Loader";
 
 const getRoleHomePath = (role) => {
-  if (role === "super_admin") return "/superadmin/users";
-  if (role === "admin") return "/admin/users";
+  if (role === "super_admin") return "/admin/super_admin";
+  if (role === "admin") return "/admin";
   if (role === "staff") return "/doctor-dashboard";
   return "/dashboard";
 };
 
 const ProtectedRoute = ({ children, roleRequired }) => {
   const location = useLocation();
-  const { user, initialized, loading } = useSelector((state) => state.auth || {});
+  const { user, token, initialized, loading } = useSelector(
+    (state) => state.auth || {}
+  );
 
-  if (loading || !initialized) return <Loader />;
+  // Sirf tab loader dikhayein jab auth check chal raha ho aur user/token resolve na hua ho
+  if (loading || (token && !initialized)) {
+    return <Loader />;
+  }
 
-  if (!user) {
+  if (!token && !user) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (roleRequired) {
+  if (!user && initialized) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (roleRequired && user) {
     const allowedRoles = Array.isArray(roleRequired)
       ? roleRequired
       : [roleRequired];
 
-    // If role is undefined on newly registered user and target is /dashboard, allow through
     const effectiveRole = user.role;
     const isAllowed =
       allowedRoles.includes(effectiveRole) ||
