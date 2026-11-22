@@ -1,5 +1,5 @@
 import Business from "../models/Business.js";
-import User from "../models/User.js";
+import User from "../models/user.js";
 import generateSlug from "../utils/generateSlug.js";
 
 // Industry ke hisaab se default labels

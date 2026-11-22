@@ -2,7 +2,7 @@ import crypto from "crypto";
 import Business from "../models/Business.js";
 import Slot from "../models/Slot.js";
 import Appointment from "../models/Appointment.js";
-import User from "../models/User.js";
+import User from "../models/user.js";
 import Doctor from "../models/Doctor.js";
 import Holiday from "../models/Holiday.js";
 import mongoose from "mongoose";
