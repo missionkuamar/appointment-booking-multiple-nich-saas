@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "../models/user.js";
 import generateToken from "../utils/generateToken.js";
 import AffiliateReferral from '../affiliate/AffiliateReferral.models.js';
 import Affiliate from '../affiliate/affiliate.models.js';
