@@ -32,13 +32,20 @@ export const addStaff = createAsyncThunk(
 export const updateStaff = createAsyncThunk(
   "staff/update",
   async ({ id, ...payload }, { rejectWithValue }) => {
+    console.log("[updateStaff] Request started:", { id, payload });
     try {
       const { data } = await api.patch(`/staff/${id}`, payload);
+      console.log("[updateStaff] Success response:", data);
       return data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data?.message || "Failed to update staff"
-      );
+      const errorMessage = err.response?.data?.message || "Failed to update staff";
+      console.error("[updateStaff] Failed:", {
+        id,
+        status: err.response?.status,
+        message: errorMessage,
+        error: err,
+      });
+      return rejectWithValue(errorMessage);
     }
   }
 );

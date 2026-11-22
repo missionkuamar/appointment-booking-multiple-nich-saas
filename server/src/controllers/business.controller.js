@@ -39,7 +39,7 @@ export const onboarding = async (req, res) => {
       await business.save();
     } else {
       // Create new
-      const slug = generateSlug(businessName);
+      const slug = await generateSlug(businessName);
       business = await Business.create({
         ownerId: req.user.id,
         businessType,

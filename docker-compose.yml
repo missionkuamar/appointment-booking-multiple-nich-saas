@@ -1,0 +1,31 @@
+services:
+  server:
+    build: ./server
+    container_name: appointment-server
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    volumes:
+      - uploads-data:/app/uploads
+    restart: unless-stopped
+    networks:
+      - appointment-net
+
+  client:
+    build: ./client
+    container_name: appointment-client
+    ports:
+      - "5174:3000"
+    depends_on:
+      - server
+    restart: unless-stopped
+    networks:
+      - appointment-net
+
+volumes:
+  uploads-data:
+
+networks:
+  appointment-net:
+    driver: bridge

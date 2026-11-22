@@ -169,24 +169,31 @@ const DoctorDashboard = () => {
     });
   };
 
-  const handleGenerateMySlots = async (e) => {
-    e.preventDefault();
-    if (slotConfig.days.length === 0) {
-      return toast.error("Kam se kam ek day select karein");
-    }
+const handleGenerateMySlots = async (e) => {
+  e.preventDefault();
+  if (slotConfig.days.length === 0) {
+    return toast.error("Kam se kam ek day select karein");
+  }
 
-    setGeneratingSlots(true);
-    try {
-      const res = await api.post("/slots/my-generate", slotConfig);
-      toast.success(res.data?.message || "Slots generated!");
-      setShowGenerateSlots(false);
-      await fetchScheduleData(selectedDate);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to generate slots");
-    } finally {
-      setGeneratingSlots(false);
-    }
-  };
+  setGeneratingSlots(true);
+  try {
+    const payload = {
+      ...slotConfig,
+      weeksAhead: Number(slotConfig.weeksAhead) || 2,
+      duration: Number(slotConfig.duration) || 30,
+      bufferTime: Number(slotConfig.bufferTime) || 0,
+    };
+
+    const res = await api.post("/slots/mydocterslot", payload);
+    toast.success(res.data?.message || "Slots generated!");
+    setShowGenerateSlots(false);
+    await fetchScheduleData();
+  } catch (err) {
+    toast.error(err.response?.data?.message || "Failed to generate slots");
+  } finally {
+    setGeneratingSlots(false);
+  }
+};
 
   const openWalkInModal = () => {
     const firstFreeSlot = (Array.isArray(schedule) ? schedule : []).find(

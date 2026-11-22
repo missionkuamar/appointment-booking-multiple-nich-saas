@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import Loader from "./Loader";
 
@@ -10,19 +10,31 @@ const getRoleHomePath = (role) => {
 };
 
 const ProtectedRoute = ({ children, roleRequired }) => {
-  const { user, initialized, loading } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const { user, initialized, loading } = useSelector((state) => state.auth || {});
 
   if (loading || !initialized) return <Loader />;
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
 
   if (roleRequired) {
     const allowedRoles = Array.isArray(roleRequired)
       ? roleRequired
       : [roleRequired];
 
-    if (!allowedRoles.includes(user.role)) {
-      return <Navigate to={getRoleHomePath(user.role)} replace />;
+    // If role is undefined on newly registered user and target is /dashboard, allow through
+    const effectiveRole = user.role;
+    const isAllowed =
+      allowedRoles.includes(effectiveRole) ||
+      (!effectiveRole && location.pathname === "/dashboard");
+
+    if (!isAllowed) {
+      const targetPath = getRoleHomePath(effectiveRole);
+      if (targetPath !== location.pathname) {
+        return <Navigate to={targetPath} replace />;
+      }
     }
   }
 

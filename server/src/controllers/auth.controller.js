@@ -197,7 +197,8 @@ export const login = async (req, res) => {
 
     console.log("name , email, password", email, password);
 
-    const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
+    const normalizedEmail =
+      typeof email === "string" ? email.trim().toLowerCase() : "";
 
     console.log(`🚀 [${traceId}][login] START`, {
       rawEmail: email,
@@ -208,13 +209,20 @@ export const login = async (req, res) => {
 
     if (!normalizedEmail || !password) {
       console.warn(`⚠️ [${traceId}][login] Missing email or password`);
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
-   const user = await User.findOne({ email: normalizedEmail }).select("+password");
-   
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      "+password"
+    );
+
     if (!user) {
-      console.warn(`⚠️ [${traceId}][login] User not found in DB for email:`, normalizedEmail);
+      console.warn(
+        `⚠️ [${traceId}][login] User not found in DB for email:`,
+        normalizedEmail
+      );
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
@@ -222,24 +230,47 @@ export const login = async (req, res) => {
       userId: user._id,
       email: user.email,
       role: user.role,
+      isActive: user.isActive,
       hasPasswordHash: !!user.password,
     });
 
+    // 🔴 Block deactivated user/staff from logging in
+    if (user.isActive === false) {
+      console.warn(
+        `🚫 [${traceId}][login] Account is deactivated for userId:`,
+        user._id
+      );
+      return res.status(403).json({
+        message:
+          "Your account has been deactivated. Please contact your admin or business owner.",
+      });
+    }
+
     if (typeof user.matchPassword !== "function") {
-      console.error(`❌ [${traceId}][login] user.matchPassword is not a function on User model`);
-      return res.status(500).json({ message: "Password verification method missing" });
+      console.error(
+        `❌ [${traceId}][login] user.matchPassword is not a function on User model`
+      );
+      return res
+        .status(500)
+        .json({ message: "Password verification method missing" });
     }
 
     const isMatch = await user.matchPassword(password);
     console.log(`🔐 [${traceId}][login] Password match result:`, isMatch);
 
     if (!isMatch) {
-      console.warn(`⚠️ [${traceId}][login] Password mismatch for userId:`, user._id);
+      console.warn(
+        `⚠️ [${traceId}][login] Password mismatch for userId:`,
+        user._id
+      );
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const token = generateToken(user._id);
-    console.log(`✅ [${traceId}][login] Login success, token generated for userId:`, user._id);
+    console.log(
+      `✅ [${traceId}][login] Login success, token generated for userId:`,
+      user._id
+    );
 
     return res.json({
       token,
@@ -249,6 +280,7 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         businessId: user.businessId,
+        isActive: user.isActive,
       },
     });
   } catch (error) {
@@ -260,6 +292,8 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
+
 
 // @desc    Get current user
 // @route   GET /api/auth/me

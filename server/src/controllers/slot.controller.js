@@ -205,6 +205,7 @@ export const generateSlots = async (req, res) => {
 export const generateMySlots = async (req, res) => {
   try {
     const doctor = await Doctor.findOne({ userId: req.user.id });
+    console.log("generate ", doctor)
     if (!doctor) {
       return res.status(404).json({ message: "Doctor profile not found" });
     }
@@ -561,5 +562,200 @@ export const getDoctorSchedule = async (req, res) => {
   } catch (error) {
     console.error("❌ [getDoctorSchedule] ERROR:", error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+
+
+
+
+
+const CHUNK_SIZE = 500;
+
+const FULL_TO_SHORT_DAY = {
+  sunday: "Sun",
+  monday: "Mon",
+  tuesday: "Tue",
+  wednesday: "Wed",
+  thursday: "Thu",
+  friday: "Fri",
+  saturday: "Sat",
+  sun: "Sun",
+  mon: "Mon",
+  tue: "Tue",
+  wed: "Wed",
+  thu: "Thu",
+  fri: "Fri",
+  sat: "Sat",
+};
+
+const normalizeDay = (d) =>
+  FULL_TO_SHORT_DAY[String(d || "").trim().toLowerCase()] || d;
+
+export const generateSlotByDocter = async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+
+    const doctor =
+      (await Doctor.findOne({ userId })) ||
+      (req.user?.doctorId ? await Doctor.findById(req.user.doctorId) : null);
+
+    if (!doctor) {
+      return res.status(404).json({ message: "Doctor profile not found" });
+    }
+
+    const businessId = doctor.businessId;
+    if (!businessId) {
+      return res
+        .status(404)
+        .json({ message: "Business not associated with doctor" });
+    }
+
+    const {
+      weeksAhead = 2,
+      days,
+      startTime,
+      endTime,
+      duration,
+      bufferTime = 0,
+    } = req.body;
+
+    const normalizedDays = Array.isArray(days)
+      ? days.map(normalizeDay).filter(Boolean)
+      : [];
+
+    const subscription = await Subscription.findOne({ businessId });
+    const isPlanActive = subscription && subscription.status === "active";
+    const activePlan = getPlanById(isPlanActive ? subscription.plan : "free");
+
+    const maxAllowedWeeks = activePlan.limits.maxWeeksAhead || 2;
+    const maxFutureSlots = activePlan.limits.maxFutureSlotsPerBusiness || 100;
+
+    const requestedWeeks = Math.min(Math.max(Number(weeksAhead) || 1, 1), 12);
+    const parsedWeeks = Math.min(requestedWeeks, maxAllowedWeeks);
+    const totalDays = parsedWeeks * 7;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDate(today);
+
+    const existingFutureSlotsCount = await Slot.countDocuments({
+      businessId,
+      date: { $gte: todayStr },
+    });
+
+    const remainingSlotQuota = maxFutureSlots - existingFutureSlotsCount;
+    if (remainingSlotQuota <= 0) {
+      return res.status(403).json({
+        message: `You have reached your ${activePlan.name} plan limit of ${maxFutureSlots} future slots.`,
+        code: "SLOT_LIMIT_REACHED",
+      });
+    }
+
+    let availability = [];
+    if (normalizedDays.length > 0 && startTime && endTime && duration) {
+      availability = normalizedDays.map((day) => ({
+        day,
+        startTime,
+        endTime,
+        slotDuration: Number(duration),
+        bufferTime: Number(bufferTime) || 0,
+      }));
+    } else if (Array.isArray(doctor.availability) && doctor.availability.length > 0) {
+      availability = doctor.availability.map((a) => ({
+        ...a,
+        day: normalizeDay(a.day),
+      }));
+    } else {
+      return res.status(400).json({
+        message: "Please select days, start/end time, and duration.",
+      });
+    }
+
+    const holidays = await Holiday.find({
+      businessId,
+      $or: [{ doctorId: doctor._id }, { doctorId: null }],
+    }).lean();
+    const holidaySet = new Set(holidays.map((h) => h.date));
+
+    const slotsToCreate = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      if (slotsToCreate.length >= remainingSlotQuota) break;
+
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayName = dayNames[d.getDay()]; // "Sun", "Mon", ...
+      const dateStr = formatDate(d);
+
+      if (holidaySet.has(dateStr)) continue;
+      if (normalizedDays.length > 0 && !normalizedDays.includes(dayName)) continue;
+
+      const dayConfig = availability.find((a) => a.day === dayName);
+      if (!dayConfig) continue;
+
+      const startMin = timeToMinutes(dayConfig.startTime);
+      const endMin = timeToMinutes(dayConfig.endTime);
+      const slotDur = Number(dayConfig.slotDuration);
+      const buffer = Number(dayConfig.bufferTime) || 0;
+      const step = slotDur + buffer;
+
+      if (step <= 0 || startMin >= endMin) continue;
+
+      for (let min = startMin; min + slotDur <= endMin; min += step) {
+        if (slotsToCreate.length >= remainingSlotQuota) break;
+
+        slotsToCreate.push({
+          businessId,
+          doctorId: doctor._id,
+          staffId: null,
+          day: dayName,
+          date: dateStr,
+          startTime: minutesToTime(min),
+          endTime: minutesToTime(min + slotDur),
+          isBooked: false,
+          isBlocked: false,
+        });
+      }
+    }
+
+    if (slotsToCreate.length === 0) {
+      return res.json({
+        message: "No new slots to create for the selected criteria.",
+        created: 0,
+      });
+    }
+
+    const bulkOps = slotsToCreate.map((slot) => ({
+      updateOne: {
+        filter: {
+          businessId: slot.businessId,
+          staffId: slot.staffId,
+          doctorId: slot.doctorId,
+          date: slot.date,
+          startTime: slot.startTime,
+        },
+        update: { $setOnInsert: slot },
+        upsert: true,
+      },
+    }));
+
+    let upsertedCount = 0;
+    for (let i = 0; i < bulkOps.length; i += CHUNK_SIZE) {
+      const chunk = bulkOps.slice(i, i + CHUNK_SIZE);
+      const chunkResult = await Slot.bulkWrite(chunk, { ordered: false });
+      upsertedCount += chunkResult.upsertedCount || 0;
+    }
+
+    return res.json({
+      message: `${upsertedCount} new slots created.`,
+      created: upsertedCount,
+      appliedWeeks: parsedWeeks,
+    });
+  } catch (error) {
+    console.error("❌ [generateSlotByDocter] ERROR:", error);
+    return res.status(500).json({ message: error.message });
   }
 };

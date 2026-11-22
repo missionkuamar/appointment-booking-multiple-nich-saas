@@ -232,6 +232,7 @@ const AffiliateDashboard = () => {
 
   const handleCopyLink = async (slug, code) => {
     if (!slug || !code) return toast.error("Slug or code missing");
+   
     try {
       const base =
         import.meta.env.VITE_BACKEND_URL ||
@@ -306,6 +307,8 @@ const AffiliateDashboard = () => {
     );
   }
 
+
+  
   const totalLinkPages = Math.max(1, Number(linksPagination?.pages) || 1);
 
   return (

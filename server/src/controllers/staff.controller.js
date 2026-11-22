@@ -160,6 +160,8 @@ export const getMyStaff = async (req, res) => {
   }
 };
 
+
+
 // @desc    Update staff
 // @route   PATCH /api/staff/:id
 export const updateStaff = async (req, res) => {
@@ -197,7 +199,13 @@ export const updateStaff = async (req, res) => {
 
     if (name !== undefined && name.trim()) staff.name = name.trim();
     if (staffTitle !== undefined) staff.staffTitle = staffTitle.trim();
-    if (isActive !== undefined) staff.isActive = Boolean(isActive);
+
+    if (isActive !== undefined) {
+      staff.isActive =
+        typeof isActive === "string"
+          ? isActive.toLowerCase() === "true"
+          : Boolean(isActive);
+    }
 
     await staff.save();
 

@@ -1,5 +1,10 @@
 import {
-  Routes, Route, Navigate, useParams, useLocation, useNavigate,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+  useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -33,6 +38,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import AffiliateDashboard from "./affilate/AffiliateDashboard";
 import AffiliateWithdrawals from "./affilate/AffiliateWithdrawals";
 import AdminWithdrawals from "./affilate/AdminWithdrawals";
+import AdminNotifications from "./affilate/AdminNotifications";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -43,9 +49,7 @@ import AdminAppointmentsPage from "./pages/admin/AdminAppointmentsPage";
 import AdminSlotsPage from "./pages/admin/AdminSlotsPage";
 import AdminHolidaysPage from "./pages/admin/AdminHolidaysPage";
 import AdminSubscriptionsPage from "./pages/admin/AdminSubscriptionsPage";
-import AdminNotificationsPage from "./pages/admin/AdminNotificationsPage";
 import SuperAdminUsersPage from "./pages/SuperAdminUsersPage";
-import AdminNotifications from "./affilate/AdminNotifications";
 
 export const AffiliateRedirect = () => {
   const { slug } = useParams();
@@ -55,6 +59,7 @@ export const AffiliateRedirect = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ref = params.get("ref");
+    console.log("[AffiliateRedirect] params:", { slug, ref });
     if (ref) localStorage.setItem("affiliateRef", ref);
     navigate("/login", { replace: true });
   }, [slug, location.search, navigate]);
@@ -68,19 +73,54 @@ export const AffiliateRedirect = () => {
 
 function App() {
   const dispatch = useDispatch();
-  const { user, token, initialized } = useSelector((state) => state.auth);
+  const location = useLocation();
+  const { user, token, initialized } = useSelector((state) => state.auth || {});
+  const businessState = useSelector((state) => state.business || {});
+
+  console.log("[App] Render:", {
+    pathname: location.pathname,
+    hasUser: Boolean(user),
+    userId: user?._id || user?.id,
+    userRole: user?.role,
+    hasToken: Boolean(token),
+    initialized,
+    businessId: businessState?.data?._id,
+    businessSlug: businessState?.data?.slug,
+  });
 
   useEffect(() => {
+    console.log("[App:authEffect] triggered:", {
+      hasToken: Boolean(token),
+      hasUser: Boolean(user),
+      initialized,
+      pathname: location.pathname,
+    });
+
     if (token && !user) {
+      console.log("[App:authEffect] Dispatching fetchMe()");
       dispatch(fetchMe()).then((res) => {
-        if (fetchMe.fulfilled.match(res)) dispatch(fetchMyBusiness());
+        console.log("[App:authEffect] fetchMe result:", {
+          type: res?.type,
+          fulfilled: fetchMe.fulfilled.match(res),
+        });
+        if (fetchMe.fulfilled.match(res)) {
+          console.log("[App:authEffect] Dispatching fetchMyBusiness()");
+          dispatch(fetchMyBusiness());
+        }
       });
+    } else if (token && user) {
+      console.log("[App:authEffect] Token & user present -> dispatching fetchMyBusiness()");
+      dispatch(fetchMyBusiness());
     } else if (!token) {
+      console.warn("[App:authEffect] No token -> dispatching auth/fetchMe/rejected");
       dispatch({ type: "auth/fetchMe/rejected" });
     }
-  }, [dispatch, token, user]);
+  }, [dispatch, token, user, initialized, location.pathname]);
 
-  if (token && !initialized) return <Loader />;
+  if (token && !initialized) {
+    console.log("[App] Showing Loader because token exists and !initialized");
+    return <Loader />;
+  }
 
   return (
     <Routes>
@@ -94,7 +134,7 @@ function App() {
       <Route path="/manage/:token" element={<RescheduleBooking />} />
       <Route path="/r/:slug" element={<AffiliateRedirect />} />
 
-      {/* 🔴 ADMIN ROUTES (NESTED) */}
+      {/* ADMIN ROUTES (NESTED) */}
       <Route
         path="/admin"
         element={
@@ -113,25 +153,108 @@ function App() {
         <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
         <Route path="withdrawals" element={<AdminWithdrawals />} />
         <Route path="notifications" element={<AdminNotifications />} />
-        <Route path="affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
+        <Route
+          path="affiliate"
+          element={
+            <ProtectedRoute>
+              <AffiliateDashboard />
+            </ProtectedRoute>
+          }
+        />
         <Route path="super_admin" element={<SuperAdminUsersPage />} />
-        
       </Route>
 
       {/* Protected Owner/Staff */}
-      <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute roleRequired="owner"><Dashboard /></ProtectedRoute>} />
-      <Route path="/slots" element={<ProtectedRoute roleRequired="owner"><SlotManager /></ProtectedRoute>} />
-      <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-      <Route path="/doctors" element={<ProtectedRoute><DoctorManager /></ProtectedRoute>} />
-      <Route path="/staff" element={<ProtectedRoute><StaffManager /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/doctor-dashboard" element={<ProtectedRoute roleRequired="staff"><DoctorDashboard /></ProtectedRoute>} />
-      <Route path="/subscription" element={<ProtectedRoute roleRequired="owner"><SubscriptionPage /></ProtectedRoute>} />
-      
-      {/* 🔴 AFFILIATE ROUTES (Bahar nikal diye) */}
-      <Route path="/affiliate" element={<ProtectedRoute><AffiliateDashboard /></ProtectedRoute>} />
-      <Route path="/affiliate/withdrawals" element={<ProtectedRoute><AffiliateWithdrawals /></ProtectedRoute>} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute roleRequired="owner">
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/slots"
+        element={
+          <ProtectedRoute roleRequired="owner">
+            <SlotManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute>
+            <Appointments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctors"
+        element={
+          <ProtectedRoute>
+            <DoctorManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/staff"
+        element={
+          <ProtectedRoute>
+            <StaffManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/doctor-dashboard"
+        element={
+          <ProtectedRoute roleRequired="staff">
+            <DoctorDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute roleRequired="owner">
+            <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* AFFILIATE ROUTES */}
+      <Route
+        path="/affiliate"
+        element={
+          <ProtectedRoute>
+            <AffiliateDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/affiliate/withdrawals"
+        element={
+          <ProtectedRoute>
+            <AffiliateWithdrawals />
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

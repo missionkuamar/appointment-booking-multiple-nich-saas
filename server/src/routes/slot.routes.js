@@ -4,6 +4,7 @@ import {
   getMySlots,
   clearSlots,
   generateMySlots,
+  generateSlotByDocter
 } from "../controllers/slot.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { getDoctorSchedule } from "../controllers/slot.controller.js";
@@ -22,6 +23,8 @@ router.post(
   generateSlots
 );
 router.post("/my-generate", protect, generateMySlots);
+router.post("/mydocterslot", protect, generateSlotByDocter);
+
 router.get("/my", protect, getMySlots);
 router.delete("/clear", protect, clearSlots);
 router.get("/my-schedule", protect, getDoctorSchedule);

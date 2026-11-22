@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import api from "../../api/axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API = api
 
 export default function PublicBooking() {
   const { slug } = useParams();

@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
+import toast from "react-hot-toast";
 import { logout } from "../features/auth/authSlice";
-import { clearBusiness } from "../features/business/businessSlice";
+import { clearBusiness, fetchMyBusiness } from "../features/business/businessSlice";
 import {
   fetchStats,
   fetchMyAppointments,
 } from "../features/appointment/appointmentSlice";
 import { fetchMyDoctors } from "../features/doctor/doctorSlice";
-import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { themes } from "../constants/themes";
 
@@ -24,91 +26,194 @@ const formatTrendDate = (rawDate) => {
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const qrWrapperRef = useRef(null);
 
-  const { user, token } = useSelector((s) => s.auth || {});
-  const { data: business } = useSelector((s) => s.business || {});
-  const {
-    stats,
-    statsLoading,
-    list: appointments,
-  } = useSelector((s) => s.appointment || {});
-  const { list: doctors } = useSelector((s) => s.doctor || {});
-  const { status: subStatus } = useSelector((s) => s.subscription || {});
+  const authState = useSelector((s) => s.auth || {});
+  const businessState = useSelector((s) => s.business || {});
+  const appointmentState = useSelector((s) => s.appointment || {});
+  const doctorState = useSelector((s) => s.doctor || {});
+  const subscriptionState = useSelector((s) => s.subscription || {});
+
+  const { user, token } = authState;
+  const { data: business } = businessState;
+  const { stats, statsLoading, list: appointments } = appointmentState;
+  const { list: doctors } = doctorState;
+  const { status: subStatus } = subscriptionState;
 
   const [chartRange, setChartRange] = useState("7");
-
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem("dashboard-theme") || "day";
   });
 
   const t = themes[theme] || themes.day;
+  const activeToken = token || localStorage.getItem("token");
 
+  console.log("[Dashboard] Render snapshot:", {
+    hasUser: Boolean(user),
+    userRole: user?.role,
+    hasToken: Boolean(token),
+    hasLocalStorageToken: Boolean(localStorage.getItem("token")),
+    businessId: business?._id,
+    businessName: business?.businessName,
+    businessSlug: business?.slug,
+    subStatus,
+    statsLoading,
+    doctorsCount: Array.isArray(doctors) ? doctors.length : typeof doctors,
+    appointmentsCount: Array.isArray(appointments)
+      ? appointments.length
+      : typeof appointments,
+    chartRange,
+    theme,
+  });
 
-useEffect(() => {
-    const activeToken = token || localStorage.getItem("token");
-    if (!activeToken) return;
+  // One-time reload guard when entering /dashboard after onboarding/register
+  useEffect(() => {
+    const reloadKey = "dashboard_once_after_entry";
+    const alreadyReloaded = sessionStorage.getItem(reloadKey);
+    console.log("[Dashboard:reloadGuard] check:", {
+      alreadyReloaded,
+      activeToken: Boolean(activeToken),
+      businessSlug: business?.slug,
+    });
 
-    dispatch(fetchMyDoctors());
-    dispatch(
-      fetchMyAppointments({
-        status: "all",
-        page: 1,
-        limit: 5,
-      })
-    );
-    dispatch(fetchStats(chartRange));
-  }, [dispatch, token, chartRange]);
-
-
-
-
-
-
-
-
+    if (!alreadyReloaded) {
+      sessionStorage.setItem(reloadKey, "true");
+      console.warn("[Dashboard:reloadGuard] Triggering one-time reload");
+      window.location.reload();
+    }
+  }, [activeToken, business?.slug]);
 
   useEffect(() => {
+    console.log("[Dashboard:themeEffect] saving theme:", theme);
     localStorage.setItem("dashboard-theme", theme);
   }, [theme]);
 
+  const hydrateDashboard = useCallback(
+    async (range) => {
+      console.log("[Dashboard:hydrateDashboard] start:", {
+        range,
+        hasActiveToken: Boolean(activeToken),
+      });
+
+      if (!activeToken) {
+        console.warn("[Dashboard:hydrateDashboard] Aborted: no activeToken");
+        return;
+      }
+
+      try {
+        const results = await Promise.all([
+          dispatch(fetchMyBusiness()),
+          dispatch(fetchMyDoctors()),
+          dispatch(
+            fetchMyAppointments({
+              status: "all",
+              page: 1,
+              limit: 5,
+            })
+          ),
+          dispatch(fetchStats(range)),
+        ]);
+
+        console.log("[Dashboard:hydrateDashboard] Promise.all completed:", {
+          business: results[0]?.type,
+          doctors: results[1]?.type,
+          appointments: results[2]?.type,
+          stats: results[3]?.type,
+        });
+      } catch (err) {
+        console.error("[Dashboard:hydrateDashboard] Error:", err);
+      }
+    },
+    [dispatch, activeToken]
+  );
+
   useEffect(() => {
-    const activeToken = token || localStorage.getItem("token");
-    if (!activeToken) return;
-
-    dispatch(fetchMyDoctors());
-    dispatch(
-      fetchMyAppointments({
-        status: "all",
-        page: 1,
-        limit: 5,
-      })
-    );
-  }, [dispatch, token]);
-
-  useEffect(() => {
-    const activeToken = token || localStorage.getItem("token");
-    if (!activeToken) return;
-
-    dispatch(fetchStats(chartRange));
-  }, [dispatch, chartRange, token]);
+    console.log("[Dashboard:fetchEffect] running hydrateDashboard for range:", chartRange);
+    hydrateDashboard(chartRange);
+  }, [hydrateDashboard, chartRange]);
 
   const handleLogout = () => {
+    console.log("[Dashboard:handleLogout] Logging out");
+    sessionStorage.removeItem("dashboard_once_after_entry");
     dispatch(logout());
     dispatch(clearBusiness());
     navigate("/login");
   };
 
-  const bookingUrl = business?.slug
-    ? `${window.location.origin}/book/${business.slug}`
-    : `${window.location.origin}/book`;
+  const baseOrigin =
+    import.meta.env.VITE_PUBLIC_URL?.replace(/\/$/, "") ||
+    window.location.origin;
+
+  const hasUniqueSlug = Boolean(business?.slug);
+  const bookingUrl = hasUniqueSlug
+    ? `${baseOrigin}/book/${business.slug}`
+    : "";
 
   const copyLink = async () => {
+    console.log("[Dashboard:copyLink] bookingUrl:", bookingUrl);
+    if (!bookingUrl) {
+      toast.error("Booking link is still loading...");
+      return;
+    }
     try {
       await navigator.clipboard.writeText(bookingUrl);
-      alert("Booking link copied!");
-    } catch {
-      alert("Unable to copy link");
+      toast.success("Unique booking link copied!");
+    } catch (err) {
+      console.error("[Dashboard:copyLink] failed:", err);
+      toast.error("Unable to copy link");
     }
+  };
+
+  const downloadQrPng = () => {
+    console.log("[Dashboard:downloadQrPng] start:", { bookingUrl, slug: business?.slug });
+    if (!bookingUrl) return;
+    const svg = qrWrapperRef.current?.querySelector("svg");
+    if (!svg) {
+      console.warn("[Dashboard:downloadQrPng] SVG element not found");
+      return;
+    }
+
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svg);
+    const img = new Image();
+    const svgBlob = new Blob([svgStr], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const blobUrl = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        const size = 600;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+
+        const pngUrl = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = pngUrl;
+        link.download = `${business.slug}-booking-qr.png`;
+        link.click();
+
+        URL.revokeObjectURL(blobUrl);
+        console.log("[Dashboard:downloadQrPng] Downloaded successfully");
+        toast.success("QR code downloaded!");
+      } catch (err) {
+        console.error("[Dashboard:downloadQrPng] Canvas error:", err);
+        toast.error("Failed to export QR");
+      }
+    };
+
+    img.onerror = (err) => {
+      console.error("[Dashboard:downloadQrPng] Image load error:", err);
+      URL.revokeObjectURL(blobUrl);
+    };
+
+    img.src = blobUrl;
   };
 
   const trendItems = Array.isArray(stats?.trend) ? stats.trend : [];
@@ -137,7 +242,7 @@ useEffect(() => {
       to: "/doctors",
       icon: "🩺",
       title: "Doctors",
-      desc: `${doctors?.length || 0} active`,
+      desc: `${Array.isArray(doctors) ? doctors.length : 0} active`,
     },
     {
       to: "/slots",
@@ -194,37 +299,89 @@ useEffect(() => {
         )}
 
         <section
-          className={`rounded-2xl border ${t.card} p-5 md:p-6 mb-6 flex flex-col md:flex-row justify-between gap-5`}
+          className={`rounded-2xl border ${t.card} p-5 md:p-6 mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6`}
         >
-          <div>
+          <div className="flex-1 min-w-0">
             <h2 className={`text-2xl font-bold ${t.text}`}>
               Welcome, {business?.businessName || user?.name || "User"} 👋
             </h2>
             <p className={`text-sm mt-2 ${t.muted}`}>
               Here's what's happening with your clinic today.
             </p>
-          </div>
 
-          <div className="w-full md:max-w-md">
-            <p className={`text-xs font-semibold mb-2 ${t.muted}`}>
-              Your public booking link
-            </p>
+            <div className="mt-4 max-w-xl">
+              <p className={`text-xs font-semibold mb-2 ${t.muted}`}>
+                Your unique public booking link
+              </p>
 
-            <div className="flex gap-2">
-              <code
-                className={`flex-1 min-w-0 ${t.soft} ${t.text} px-3 py-3 rounded-lg text-xs truncate`}
-              >
-                {bookingUrl}
-              </code>
+              {hasUniqueSlug ? (
+                <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                  <code
+                    className={`flex-1 min-w-0 ${t.soft} ${t.text} px-3 py-2.5 rounded-lg text-xs truncate border ${t.border}`}
+                  >
+                    {bookingUrl}
+                  </code>
 
-              <button
-                onClick={copyLink}
-                className={`${t.accent} text-white px-4 rounded-lg text-sm font-semibold`}
-              >
-                Copy
-              </button>
+                  <button
+                    type="button"
+                    onClick={copyLink}
+                    className={`${t.accent} text-white px-4 py-2.5 rounded-lg text-xs font-semibold hover:opacity-90 transition`}
+                  >
+                    Copy
+                  </button>
+
+                  <a
+                    href={bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`px-4 py-2.5 rounded-lg border ${t.border} ${t.text} text-xs font-semibold hover:opacity-80 transition`}
+                  >
+                    Open
+                  </a>
+                </div>
+              ) : (
+                <p className={`text-xs ${t.muted}`}>
+                  Generating your unique booking link...
+                </p>
+              )}
             </div>
           </div>
+
+          {hasUniqueSlug && (
+            <div
+              className={`flex items-center gap-4 p-4 rounded-2xl border ${t.border} ${t.soft} w-full lg:w-auto`}
+            >
+              <div
+                ref={qrWrapperRef}
+                className="bg-white p-2.5 rounded-xl shadow-sm border border-gray-200 flex-shrink-0"
+              >
+                <QRCodeSVG
+                  value={bookingUrl}
+                  size={120}
+                  level="M"
+                  includeMargin={true}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className={`text-sm font-bold ${t.text}`}>
+                  Scan to Book
+                </p>
+                <p className={`text-xs ${t.muted} max-w-[180px]`}>
+                  Point your phone camera at this QR code to open the booking page directly.
+                </p>
+                <button
+                  type="button"
+                  onClick={downloadQrPng}
+                  className={`${t.accent} text-white px-3.5 py-2 rounded-lg text-xs font-semibold hover:opacity-90 transition`}
+                >
+                  Download QR
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -352,7 +509,7 @@ useEffect(() => {
             </div>
 
             <div className="space-y-3">
-              {appointments?.length > 0 ? (
+              {Array.isArray(appointments) && appointments.length > 0 ? (
                 appointments.slice(0, 5).map((appt) => (
                   <div
                     key={appt._id}
