@@ -20,14 +20,14 @@ export const DEFAULT_LIST_PAGINATION = {
 };
 
 const normalizePagination = (pag, fallbackPage, fallbackLimit) => {
-  console.log("[AffiliateSlice][normalizePagination] input:", {
-    pag,
-    fallbackPage,
-    fallbackLimit,
-  });
+  // console.log("[AffiliateSlice][normalizePagination] input:", {
+  //   pag,
+  //   fallbackPage,
+  //   fallbackLimit,
+  // });
 
   if (!pag) {
-    console.log("[AffiliateSlice][normalizePagination] no pagination object -> null");
+    // console.log("[AffiliateSlice][normalizePagination] no pagination object -> null");
     return null;
   }
 
@@ -49,7 +49,7 @@ const normalizePagination = (pag, fallbackPage, fallbackLimit) => {
         : page > 1,
   };
 
-  console.log("[AffiliateSlice][normalizePagination] output:", normalized);
+  // console.log("[AffiliateSlice][normalizePagination] output:", normalized);
   return normalized;
 };
 
@@ -57,16 +57,16 @@ const normalizePagination = (pag, fallbackPage, fallbackLimit) => {
 export const fetchAffiliateWithdrawals = createAsyncThunk(
   "affiliate/fetchWithdrawals",
   async (_, { rejectWithValue }) => {
-    console.log("[AffiliateSlice][fetchWithdrawals] calling GET /affiliate/withdrawals");
+    // console.log("[AffiliateSlice][fetchWithdrawals] calling GET /affiliate/withdrawals");
     try {
       const response = await api.get("/affiliate/withdrawals");
-      console.log("fetchAffiliateWithdrawals", fetchAffiliateWithdrawals)
-      console.log("[AffiliateSlice][fetchWithdrawals] raw respon  se:", response.data);
+      // console.log("fetchAffiliateWithdrawals", fetchAffiliateWithdrawals)
+      // console.log("[AffiliateSlice][fetchWithdrawals] raw respon  se:", response.data);
 
       const list = Array.isArray(response.data?.data?.withdrawals)
         ? response.data.data.withdrawals
         : [];
-      console.log("[AffiliateSlice][fetchWithdrawals] extracted list count:", list.length);
+      // console.log("[AffiliateSlice][fetchWithdrawals] extracted list count:", list.length);
       return list;
     } catch (error) {
       console.error("[AffiliateSlice][fetchWithdrawals] error:", {
@@ -92,12 +92,12 @@ export const fetchAffiliateWithdrawals = createAsyncThunk(
 export const fetchAffiliateDashboard = createAsyncThunk(
   "affiliate/fetchDashboard",
   async ({ linkPage = 1, linkLimit = 10 } = {}, { dispatch, rejectWithValue }) => {
-    console.log("[AffiliateSlice][fetchDashboard] params:", { linkPage, linkLimit });
+    // console.log("[AffiliateSlice][fetchDashboard] params:", { linkPage, linkLimit });
     try {
       const response = await api.get("/affiliate/dashboard", {
         params: { linkPage, linkLimit },
       });
-      console.log("[AffiliateSlice][fetchDashboard] raw response:", response.data);
+      // console.log("[AffiliateSlice][fetchDashboard] raw response:", response.data);
 
       const data = response.data?.data;
       if (!data) {
@@ -106,13 +106,13 @@ export const fetchAffiliateDashboard = createAsyncThunk(
       }
 
       const affiliate = data.affiliate || null;
-      console.log("[AffiliateSlice][fetchDashboard] affiliate:", affiliate);
+      // console.log("[AffiliateSlice][fetchDashboard] affiliate:", affiliate);
 
       if (affiliate) {
-        console.log("[AffiliateSlice][fetchDashboard] dispatching fetchAffiliateWithdrawals");
+        // console.log("[AffiliateSlice][fetchDashboard] dispatching fetchAffiliateWithdrawals");
         await dispatch(fetchAffiliateWithdrawals());
       } else {
-        console.log("[AffiliateSlice][fetchDashboard] no affiliate found, skipping withdrawals fetch");
+        // console.log("[AffiliateSlice][fetchDashboard] no affiliate found, skipping withdrawals fetch");
       }
 
       return {
@@ -144,10 +144,10 @@ export const fetchAffiliateDashboard = createAsyncThunk(
 export const joinAffiliateProgram = createAsyncThunk(
   "affiliate/joinProgram",
   async (_, { rejectWithValue }) => {
-    console.log("[AffiliateSlice][joinProgram] calling POST /affiliate/join");
+    // console.log("[AffiliateSlice][joinProgram] calling POST /affiliate/join");
     try {
       const res = await api.post("/affiliate/join");
-      console.log("[AffiliateSlice][joinProgram] success:", res.data);
+      // console.log("[AffiliateSlice][joinProgram] success:", res.data);
       return true;
     } catch (error) {
       console.error("[AffiliateSlice][joinProgram] error:", {
@@ -168,10 +168,10 @@ export const joinAffiliateProgram = createAsyncThunk(
 export const createAffiliateLink = createAsyncThunk(
   "affiliate/createLink",
   async (payload, { rejectWithValue }) => {
-    console.log("[AffiliateSlice][createLink] payload:", payload);
+    // console.log("[AffiliateSlice][createLink] payload:", payload);
     try {
       const response = await api.post("/affiliate/links", payload);
-      console.log("[AffiliateSlice][createLink] success response:", response.data);
+      // console.log("[AffiliateSlice][createLink] success response:", response.data);
       return response.data?.data || null;
     } catch (error) {
       console.error("[AffiliateSlice][createLink] error:", {
@@ -192,10 +192,10 @@ export const createAffiliateLink = createAsyncThunk(
 export const deleteAffiliateLink = createAsyncThunk(
   "affiliate/deleteLink",
   async (id, { rejectWithValue }) => {
-    console.log("[AffiliateSlice][deleteLink] deleting id:", id);
+    // console.log("[AffiliateSlice][deleteLink] deleting id:", id);
     try {
       await api.delete(`/affiliate/links/${id}`);
-      console.log("[AffiliateSlice][deleteLink] deleted id:", id);
+      // console.log("[AffiliateSlice][deleteLink] deleted id:", id);
       return id;
     } catch (error) {
       console.error("[AffiliateSlice][deleteLink] error:", {
@@ -220,13 +220,13 @@ export const fetchPaginatedAffiliateList = createAsyncThunk(
     { fetchUrl, type = "referral", page = 1, limit = 5, status = "" },
     { rejectWithValue }
   ) => {
-    console.log("[AffiliateSlice][fetchPaginatedList] request:", {
-      fetchUrl,
-      type,
-      page,
-      limit,
-      status,
-    });
+    // console.log("[AffiliateSlice][fetchPaginatedList] request:", {
+    //   fetchUrl,
+    //   type,
+    //   page,
+    //   limit,
+    //   status,
+    // });
 
     try {
       if (!fetchUrl) {
@@ -240,7 +240,7 @@ export const fetchPaginatedAffiliateList = createAsyncThunk(
       }
 
       const response = await api.get(fetchUrl, { params });
-      console.log("[AffiliateSlice][fetchPaginatedList] raw response:", response.data);
+      // console.log("[AffiliateSlice][fetchPaginatedList] raw response:", response.data);
 
       const data = response.data?.data;
       if (!data) {
@@ -264,12 +264,12 @@ export const fetchPaginatedAffiliateList = createAsyncThunk(
         status,
       };
 
-      console.log("[AffiliateSlice][fetchPaginatedList] normalized result:", {
-        type: result.type,
-        itemsCount: result.items.length,
-        pagination: result.pagination,
-        status: result.status,
-      });
+      // console.log("[AffiliateSlice][fetchPaginatedList] normalized result:", {
+      //   type: result.type,
+      //   itemsCount: result.items.length,
+      //   pagination: result.pagination,
+      //   status: result.status,
+      // });
 
       return result;
     } catch (error) {
@@ -330,22 +330,22 @@ const affiliateSlice = createSlice({
   reducers: {
     setLinkPage: (state, action) => {
       const newPage = Number(action.payload);
-      console.log("[AffiliateSlice][setLinkPage]", {
-        payload: action.payload,
-        newPage,
-        prevPage: state.linksPagination.page,
-      });
+      // console.log("[AffiliateSlice][setLinkPage]", {
+      //   payload: action.payload,
+      //   newPage,
+      //   prevPage: state.linksPagination.page,
+      // });
       if (Number.isInteger(newPage) && newPage >= 1) {
         state.linksPagination.page = newPage;
       }
     },
     setLinkLimit: (state, action) => {
       const newLimit = Number(action.payload);
-      console.log("[AffiliateSlice][setLinkLimit]", {
-        payload: action.payload,
-        newLimit,
-        prevLimit: state.linksPagination.limit,
-      });
+      // console.log("[AffiliateSlice][setLinkLimit]", {
+      //   payload: action.payload,
+      //   newLimit,
+      //   prevLimit: state.linksPagination.limit,
+      // });
       if (Number.isInteger(newLimit) && newLimit > 0) {
         state.linksPagination.limit = newLimit;
         state.linksPagination.page = 1;
@@ -353,21 +353,21 @@ const affiliateSlice = createSlice({
     },
     setListItems: (state, action) => {
       const { type = "referral", items = [] } = action.payload || {};
-      console.log("[AffiliateSlice][setListItems]", {
-        type,
-        itemsCount: Array.isArray(items) ? items.length : 0,
-      });
+      // console.log("[AffiliateSlice][setListItems]", {
+      //   type,
+      //   itemsCount: Array.isArray(items) ? items.length : 0,
+      // });
       const bucket = state.listData[type] || state.listData.referral;
       bucket.items = Array.isArray(items) ? items : [];
     },
     setListStatusFilter: (state, action) => {
       const { type = "referral", status = "" } = action.payload || {};
-      console.log("[AffiliateSlice][setListStatusFilter]", { type, status });
+      // console.log("[AffiliateSlice][setListStatusFilter]", { type, status });
       const bucket = state.listData[type] || state.listData.referral;
       bucket.statusFilter = status;
     },
     resetAffiliateState: () => {
-      console.log("[AffiliateSlice][resetAffiliateState] resetting state to initialState");
+      // console.log("[AffiliateSlice][resetAffiliateState] resetting state to initialState");
       return initialState;
     },
   },
@@ -375,21 +375,21 @@ const affiliateSlice = createSlice({
     builder
       // Fetch Dashboard
       .addCase(fetchAffiliateDashboard.pending, (state) => {
-        console.log("[AffiliateSlice][fetchDashboard.pending]", {
-          hasLoadedOnce: state.hasLoadedOnce,
-        });
+        // console.log("[AffiliateSlice][fetchDashboard.pending]", {
+        //   hasLoadedOnce: state.hasLoadedOnce,
+        // });
         if (!state.hasLoadedOnce) {
           state.loading = true;
         }
         state.error = null;
       })
       .addCase(fetchAffiliateDashboard.fulfilled, (state, action) => {
-        console.log("[AffiliateSlice][fetchDashboard.fulfilled] payload:", action.payload);
+        // console.log("[AffiliateSlice][fetchDashboard.fulfilled] payload:", action.payload);
         state.loading = false;
         state.hasLoadedOnce = true;
 
         if (action.payload?.notFound) {
-          console.log("[AffiliateSlice][fetchDashboard.fulfilled] notFound -> clearing affiliate & withdrawals");
+          // console.log("[AffiliateSlice][fetchDashboard.fulfilled] notFound -> clearing affiliate & withdrawals");
           state.affiliate = null;
           state.withdrawals = [];
           return;
@@ -416,13 +416,13 @@ const affiliateSlice = createSlice({
           state.withdrawals = [];
         }
 
-        console.log("[AffiliateSlice][fetchDashboard.fulfilled] updated state summary:", {
-          hasAffiliate: Boolean(state.affiliate),
-          earnings: state.earnings,
-          linksCount: state.links.length,
-          referralsCount: state.referrals.length,
-          linksPagination: state.linksPagination,
-        });
+        // console.log("[AffiliateSlice][fetchDashboard.fulfilled] updated state summary:", {
+        //   hasAffiliate: Boolean(state.affiliate),
+        //   earnings: state.earnings,
+        //   linksCount: state.links.length,
+        //   referralsCount: state.referrals.length,
+        //   linksPagination: state.linksPagination,
+        // });
       })
       .addCase(fetchAffiliateDashboard.rejected, (state, action) => {
         console.error("[AffiliateSlice][fetchDashboard.rejected]", action.payload);
@@ -433,7 +433,7 @@ const affiliateSlice = createSlice({
 
       // Fetch Withdrawals
       .addCase(fetchAffiliateWithdrawals.fulfilled, (state, action) => {
-        console.log("[AffiliateSlice][fetchWithdrawals.fulfilled] count:", (action.payload || []).length);
+        // console.log("[AffiliateSlice][fetchWithdrawals.fulfilled] count:", (action.payload || []).length);
         state.withdrawals = action.payload || [];
       })
       .addCase(fetchAffiliateWithdrawals.rejected, (state, action) => {
@@ -443,11 +443,11 @@ const affiliateSlice = createSlice({
 
       // Create Link
       .addCase(createAffiliateLink.pending, (state) => {
-        console.log("[AffiliateSlice][createLink.pending]");
+        // console.log("[AffiliateSlice][createLink.pending]");
         state.isCreatingLink = true;
       })
       .addCase(createAffiliateLink.fulfilled, (state, action) => {
-        console.log("[AffiliateSlice][createLink.fulfilled]", action.payload);
+        // console.log("[AffiliateSlice][createLink.fulfilled]", action.payload);
         state.isCreatingLink = false;
       })
       .addCase(createAffiliateLink.rejected, (state, action) => {
@@ -458,7 +458,7 @@ const affiliateSlice = createSlice({
       // Delete Link
       .addCase(deleteAffiliateLink.fulfilled, (state, action) => {
         const deletedId = action.payload;
-        console.log("[AffiliateSlice][deleteLink.fulfilled] removed id:", deletedId);
+        // console.log("[AffiliateSlice][deleteLink.fulfilled] removed id:", deletedId);
         state.links = state.links.filter((l) => l._id !== deletedId);
         const remaining = Math.max(0, state.linksPagination.total - 1);
         const maxPage = Math.max(
@@ -476,18 +476,18 @@ const affiliateSlice = createSlice({
       // Fetch Paginated List (Referrals / Withdrawals)
       .addCase(fetchPaginatedAffiliateList.pending, (state, action) => {
         const type = action.meta?.arg?.type || "referral";
-        console.log("[AffiliateSlice][fetchPaginatedList.pending] type:", type);
+        // console.log("[AffiliateSlice][fetchPaginatedList.pending] type:", type);
         const bucket = state.listData[type] || state.listData.referral;
         bucket.loading = true;
       })
       .addCase(fetchPaginatedAffiliateList.fulfilled, (state, action) => {
         const { type = "referral", items, pagination, status } = action.payload;
-        console.log("[AffiliateSlice][fetchPaginatedList.fulfilled]", {
-          type,
-          itemsCount: items?.length || 0,
-          pagination,
-          status,
-        });
+        // console.log("[AffiliateSlice][fetchPaginatedList.fulfilled]", {
+        //   type,
+        //   itemsCount: items?.length || 0,
+        //   pagination,
+        //   status,
+        // });
         const bucket = state.listData[type] || state.listData.referral;
         bucket.loading = false;
         bucket.items = items;

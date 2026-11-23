@@ -8,18 +8,18 @@ export const register = async (req, res) => {
   const traceId = `reg_${Date.now()}`;
   try {
     const { name, email, password, ref } = req.body;
-    console.log("name , email, password", name, email, password);
+    // console.log("name , email, password", name, email, password);
     const normalizedEmail = typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    console.log(`🚀 [${traceId}][register] START`, {
-      name,
-      rawEmail: email,
-      normalizedEmail,
-      hasPassword: !!password,
-      ref: ref || "(EMPTY)",
-      queryRef: req.query?.ref || "(EMPTY)",
-      sessionReferral: req.session?.affiliateReferral || "(EMPTY)",
-    });
+    // console.log(`🚀 [${traceId}][register] START`, {
+    //   name,
+    //   rawEmail: email,
+    //   normalizedEmail,
+    //   hasPassword: !!password,
+    //   ref: ref || "(EMPTY)",
+    //   queryRef: req.query?.ref || "(EMPTY)",
+    //   sessionReferral: req.session?.affiliateReferral || "(EMPTY)",
+    // });
 
     if (!name || !normalizedEmail || !password) {
       console.warn(`⚠️ [${traceId}][register] Missing required fields:`, {
@@ -41,10 +41,10 @@ export const register = async (req, res) => {
       email: normalizedEmail,
       password,
     });
-    console.log(`✅ [${traceId}][register] New user created:`, {
-      userId: user._id,
-      email: user.email,
-    });
+    // console.log(`✅ [${traceId}][register] New user created:`, {
+    //   userId: user._id,
+    //   email: user.email,
+    // });
 
     // ============================================================
     // AFFILIATE TRACKING
@@ -53,42 +53,42 @@ export const register = async (req, res) => {
       let affiliateReferral = null;
       const cleanRef = (ref || req.query?.ref || "").trim();
 
-      console.log(`🤝 [${traceId}][register:affiliate] Starting affiliate tracking:`, {
-        userId: user._id,
-        cleanRef: cleanRef || "NONE",
-        hasSessionReferral: !!req.session?.affiliateReferral?.referralId,
-      });
+      // console.log(`🤝 [${traceId}][register:affiliate] Starting affiliate tracking:`, {
+      //   userId: user._id,
+      //   cleanRef: cleanRef || "NONE",
+      //   hasSessionReferral: !!req.session?.affiliateReferral?.referralId,
+      // });
 
       // 1. Check session referral first
       if (req.session?.affiliateReferral?.referralId) {
         const { referralId, affiliateId } = req.session.affiliateReferral;
-        console.log(`🔍 [${traceId}][register:affiliate] Checking session referral:`, {
-          referralId,
-          affiliateId,
-        });
+        // console.log(`🔍 [${traceId}][register:affiliate] Checking session referral:`, {
+        //   referralId,
+        //   affiliateId,
+        // });
 
         const referral = await AffiliateReferral.findById(referralId);
-        console.log(`📄 [${traceId}][register:affiliate] Session referral doc:`, referral ? {
-          id: referral._id,
-          referredUser: referral.referredUser,
-          status: referral.status,
-        } : "NOT_FOUND");
+        // console.log(`📄 [${traceId}][register:affiliate] Session referral doc:`, referral ? {
+        //   id: referral._id,
+        //   referredUser: referral.referredUser,
+        //   status: referral.status,
+        // } : "NOT_FOUND");
 
         if (referral && !referral.referredUser) {
           referral.referredUser = user._id;
           referral.status = "registered";
           await referral.save();
           affiliateReferral = referral;
-          console.log(`💾 [${traceId}][register:affiliate] Updated session referral to registered:`, referral._id);
+          // console.log(`💾 [${traceId}][register:affiliate] Updated session referral to registered:`, referral._id);
 
           const affiliate = await Affiliate.findById(affiliateId);
           if (affiliate) {
             affiliate.totalReferrals = Number(affiliate.totalReferrals || 0) + 1;
             await affiliate.save();
-            console.log(`💾 [${traceId}][register:affiliate] Incremented affiliate totalReferrals (session):`, {
-              affiliateId: affiliate._id,
-              totalReferrals: affiliate.totalReferrals,
-            });
+            // console.log(`💾 [${traceId}][register:affiliate] Incremented affiliate totalReferrals (session):`, {
+            //   affiliateId: affiliate._id,
+            //   totalReferrals: affiliate.totalReferrals,
+            // });
           } else {
             console.warn(`⚠️ [${traceId}][register:affiliate] Session affiliate not found:`, affiliateId);
           }
@@ -98,23 +98,23 @@ export const register = async (req, res) => {
 
         delete req.session.affiliateReferral;
         await req.session.save();
-        console.log(`🧹 [${traceId}][register:affiliate] Cleared session.affiliateReferral`);
+        // console.log(`🧹 [${traceId}][register:affiliate] Cleared session.affiliateReferral`);
       }
 
       // 2. Fallback to ref from req.body (localStorage ref)
       if (!affiliateReferral && cleanRef) {
-        console.log(`🔍 [${traceId}][register:affiliate] Checking fallback ref:`, cleanRef);
+        // console.log(`🔍 [${traceId}][register:affiliate] Checking fallback ref:`, cleanRef);
         const affiliate = await Affiliate.findOne({
           affiliateCode: cleanRef,
           status: "active",
         });
 
         if (affiliate) {
-          console.log(`✅ [${traceId}][register:affiliate] Active affiliate found:`, {
-            affiliateId: affiliate._id,
-            affiliateCode: affiliate.affiliateCode,
-            affiliateUserId: affiliate.user,
-          });
+          // console.log(`✅ [${traceId}][register:affiliate] Active affiliate found:`, {
+          //   affiliateId: affiliate._id,
+          //   affiliateCode: affiliate.affiliateCode,
+          //   affiliateUserId: affiliate.user,
+          // });
 
           // Avoid self-referral
           if (String(affiliate.user) === String(user._id)) {
@@ -132,22 +132,22 @@ export const register = async (req, res) => {
               existingClickReferral.status = "registered";
               await existingClickReferral.save();
               affiliateReferral = existingClickReferral;
-              console.log(`💾 [${traceId}][register:affiliate] Linked existing clicked referral to registered:`, existingClickReferral._id);
+              // console.log(`💾 [${traceId}][register:affiliate] Linked existing clicked referral to registered:`, existingClickReferral._id);
             } else {
               affiliateReferral = await AffiliateReferral.create({
                 affiliate: affiliate._id,
                 referredUser: user._id,
                 status: "registered",
               });
-              console.log(`💾 [${traceId}][register:affiliate] Created new registered referral:`, affiliateReferral._id);
+              // console.log(`💾 [${traceId}][register:affiliate] Created new registered referral:`, affiliateReferral._id);
             }
 
             affiliate.totalReferrals = Number(affiliate.totalReferrals || 0) + 1;
             await affiliate.save();
-            console.log(`💾 [${traceId}][register:affiliate] Incremented affiliate totalReferrals (fallback):`, {
-              affiliateId: affiliate._id,
-              totalReferrals: affiliate.totalReferrals,
-            });
+            // console.log(`💾 [${traceId}][register:affiliate] Incremented affiliate totalReferrals (fallback):`, {
+            //   affiliateId: affiliate._id,
+            //   totalReferrals: affiliate.totalReferrals,
+            // });
           }
         } else {
           console.warn(`⚠️ [${traceId}][register:affiliate] Active affiliate not found for ref:`, cleanRef);
@@ -155,7 +155,8 @@ export const register = async (req, res) => {
       }
 
       if (!affiliateReferral) {
-        console.log(`ℹ️ [${traceId}][register:affiliate] No affiliate referral linked for user:`, user._id);
+        // console.log(`ℹ️ [${traceId}][register:affiliate] No affiliate referral linked for user:`, user._id);
+
       }
     } catch (affError) {
       // Affiliate tracking error should not fail user registration
@@ -167,7 +168,7 @@ export const register = async (req, res) => {
     }
 
     const token = generateToken(user._id);
-    console.log(`✅ [${traceId}][register] COMPLETE for userId:`, user._id);
+    // console.log(`✅ [${traceId}][register] COMPLETE for userId:`, user._id);
 
     return res.status(201).json({
       token,
@@ -195,17 +196,17 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    console.log("name , email, password", email, password);
+    // console.log("name , email, password", email, password);
 
     const normalizedEmail =
       typeof email === "string" ? email.trim().toLowerCase() : "";
 
-    console.log(`🚀 [${traceId}][login] START`, {
-      rawEmail: email,
-      normalizedEmail,
-      hasPassword: !!password,
-      passwordLength: typeof password === "string" ? password.length : 0,
-    });
+    // console.log(`🚀 [${traceId}][login] START`, {
+    //   rawEmail: email,
+    //   normalizedEmail,
+    //   hasPassword: !!password,
+    //   passwordLength: typeof password === "string" ? password.length : 0,
+    // });
 
     if (!normalizedEmail || !password) {
       console.warn(`⚠️ [${traceId}][login] Missing email or password`);
@@ -226,13 +227,13 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    console.log(`✅ [${traceId}][login] User found:`, {
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      hasPasswordHash: !!user.password,
-    });
+    // console.log(`✅ [${traceId}][login] User found:`, {
+    //   userId: user._id,
+    //   email: user.email,
+    //   role: user.role,
+    //   isActive: user.isActive,
+    //   hasPasswordHash: !!user.password,
+    // });
 
     // 🔴 Block deactivated user/staff from logging in
     if (user.isActive === false) {
@@ -256,7 +257,7 @@ export const login = async (req, res) => {
     }
 
     const isMatch = await user.matchPassword(password);
-    console.log(`🔐 [${traceId}][login] Password match result:`, isMatch);
+    // console.log(`🔐 [${traceId}][login] Password match result:`, isMatch);
 
     if (!isMatch) {
       console.warn(
@@ -267,10 +268,10 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user._id);
-    console.log(
-      `✅ [${traceId}][login] Login success, token generated for userId:`,
-      user._id
-    );
+    // console.log(
+    //   `✅ [${traceId}][login] Login success, token generated for userId:`,
+    //   user._id
+    // );
 
     return res.json({
       token,
@@ -301,12 +302,12 @@ export const getMe = async (req, res) => {
   const traceId = `me_${Date.now()}`;
   try {
     const userId = req.user?.id || req.user?._id;
-    console.log(`🚀 [${traceId}][getMe] START`, {
-      hasReqUser: !!req.user,
-      userId,
-      reqUserId: req.user?.id,
-      reqUserUnderscoreId: req.user?._id,
-    });
+    // console.log(`🚀 [${traceId}][getMe] START`, {
+    //   hasReqUser: !!req.user,
+    //   userId,
+    //   reqUserId: req.user?.id,
+    //   reqUserUnderscoreId: req.user?._id,
+    // });
 
     if (!userId) {
       console.warn(`⚠️ [${traceId}][getMe] Missing user ID on req.user:`, req.user);
@@ -320,11 +321,11 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log(`✅ [${traceId}][getMe] User found:`, {
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-    });
+    // console.log(`✅ [${traceId}][getMe] User found:`, {
+    //   userId: user._id,
+    //   email: user.email,
+    //   role: user.role,
+    // });
 
     return res.json(user);
   } catch (error) {

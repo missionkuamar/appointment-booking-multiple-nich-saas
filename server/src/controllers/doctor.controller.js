@@ -8,20 +8,20 @@ import { getPlanById } from "../config/planConfig.js";
 // @route   POST /api/doctors
 
 export const addDoctor = async (req, res) => {
-  console.log("\n🚀 [Controller: addDoctor] Started");
-  console.log("👤 [addDoctor] req.user:", req.user);
-  console.log("📦 [addDoctor] req.body:", { ...req.body, password: "***" });
+  // console.log("\n🚀 [Controller: addDoctor] Started");
+  // console.log("👤 [addDoctor] req.user:", req.user);
+  // console.log("📦 [addDoctor] req.body:", { ...req.body, password: "***" });
 
   try {
     const ownerId = req.user?._id || req.user?.id;
-    console.log("🔍 [addDoctor] Finding business for ownerId:", ownerId);
+    // console.log("🔍 [addDoctor] Finding business for ownerId:", ownerId);
 
     const business = await Business.findOne({ ownerId });
     if (!business) {
       console.warn("⚠️ [addDoctor] Business not found for ownerId:", ownerId);
       return res.status(404).json({ message: "Business not found" });
     }
-    console.log("✅ [addDoctor] Business found:", business._id);
+    // console.log("✅ [addDoctor] Business found:", business._id);
 
     // 🔒 SUBSCRIPTION PLAN DOCTOR LIMIT CHECK
     const subscription = await Subscription.findOne({ businessId: business._id });
@@ -33,9 +33,9 @@ export const addDoctor = async (req, res) => {
       businessId: business._id,
     });
 
-    console.log(
-      `📊 [addDoctor] Plan: ${activePlan.name} | Doctors: ${currentDoctorCount}/${maxDoctors}`
-    );
+    // console.log(
+    //   `📊 [addDoctor] Plan: ${activePlan.name} | Doctors: ${currentDoctorCount}/${maxDoctors}`
+    // );
 
     if (currentDoctorCount >= maxDoctors) {
       console.warn(
@@ -81,7 +81,7 @@ export const addDoctor = async (req, res) => {
       return res.status(400).json({ message: "Email already exists" });
     }
 
-    console.log("🛠️ [addDoctor] Creating User document...");
+    // console.log("🛠️ [addDoctor] Creating User document...");
     const user = await User.create({
       name: name.trim(),
       email: normalizedEmail,
@@ -90,9 +90,9 @@ export const addDoctor = async (req, res) => {
       staffTitle: specialization || "Doctor",
       businessId: business._id,
     });
-    console.log("✅ [addDoctor] User created with ID:", user._id);
+    // console.log("✅ [addDoctor] User created with ID:", user._id);
 
-    console.log("🛠️ [addDoctor] Creating Doctor document...");
+    // console.log("🛠️ [addDoctor] Creating Doctor document...");
     const doctor = await Doctor.create({
       businessId: business._id,
       userId: user._id,
@@ -105,7 +105,7 @@ export const addDoctor = async (req, res) => {
       bio: bio || "",
       availability: availability || [],
     });
-    console.log("🎉 [addDoctor] Doctor created successfully:", doctor._id);
+    // console.log("🎉 [addDoctor] Doctor created successfully:", doctor._id);
 
     res.status(201).json(doctor);
   } catch (error) {
@@ -117,22 +117,22 @@ export const addDoctor = async (req, res) => {
 // @desc    Get my doctors
 // @route   GET /api/doctors
 export const getMyDoctors = async (req, res) => {
-  console.log("\n🚀 [Controller: getMyDoctors] Started");
+  // console.log("\n🚀 [Controller: getMyDoctors] Started");
   try {
     const ownerId = req.user?._id || req.user?.id;
-    console.log("🔍 [getMyDoctors] Finding business for ownerId:", ownerId);
+    // console.log("🔍 [getMyDoctors] Finding business for ownerId:", ownerId);
 
     const business = await Business.findOne({ ownerId });
     if (!business) {
       console.warn("⚠️ [getMyDoctors] Business not found for ownerId:", ownerId);
       return res.status(404).json({ message: "Business not found" });
     }
-    console.log("✅ [getMyDoctors] Business found:", business._id);
+    // console.log("✅ [getMyDoctors] Business found:", business._id);
 
     const doctors = await Doctor.find({ businessId: business._id }).sort({
       createdAt: -1,
     });
-    console.log(`📦 [getMyDoctors] Found ${doctors.length} doctors`);
+    // console.log(`📦 [getMyDoctors] Found ${doctors.length} doctors`);
 
     res.json(doctors);
   } catch (error) {
@@ -144,8 +144,8 @@ export const getMyDoctors = async (req, res) => {
 // @desc    Update doctor
 // @route   PATCH /api/doctors/:id
 export const updateDoctor = async (req, res) => {
-  console.log(`\n🚀 [Controller: updateDoctor] Started for ID: ${req.params.id}`);
-  console.log("📦 [updateDoctor] Update Body:", req.body);
+  // console.log(`\n🚀 [Controller: updateDoctor] Started for ID: ${req.params.id}`);
+  // console.log("📦 [updateDoctor] Update Body:", req.body);
 
   try {
     const ownerId = req.user?._id || req.user?.id;
@@ -181,7 +181,7 @@ export const updateDoctor = async (req, res) => {
     });
 
     await doctor.save();
-    console.log("✅ [updateDoctor] Doctor updated successfully:", doctor._id);
+    // console.log("✅ [updateDoctor] Doctor updated successfully:", doctor._id);
 
     res.json(doctor);
   } catch (error) {
@@ -193,7 +193,7 @@ export const updateDoctor = async (req, res) => {
 // @desc    Delete doctor
 // @route   DELETE /api/doctors/:id
 export const deleteDoctor = async (req, res) => {
-  console.log(`\n🚀 [Controller: deleteDoctor] Started for ID: ${req.params.id}`);
+  // console.log(`\n🚀 [Controller: deleteDoctor] Started for ID: ${req.params.id}`);
 
   try {
     const ownerId = req.user?._id || req.user?.id;
@@ -211,11 +211,11 @@ export const deleteDoctor = async (req, res) => {
       console.warn("⚠️ [deleteDoctor] Doctor not found:", req.params.id);
       return res.status(404).json({ message: "Doctor not found" });
     }
-    console.log("🗑️ [deleteDoctor] Doctor deleted:", doctor._id);
+    // console.log("🗑️ [deleteDoctor] Doctor deleted:", doctor._id);
 
     if (doctor.userId) {
       await User.findByIdAndDelete(doctor.userId);
-      console.log("🗑️ [deleteDoctor] Linked User deleted:", doctor.userId);
+      // console.log("🗑️ [deleteDoctor] Linked User deleted:", doctor.userId);
     }
 
     res.json({ message: "Doctor removed" });

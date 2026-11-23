@@ -12,7 +12,7 @@ const start = async () => {
   await connectDB();
   await initRazorpayPlans();
   app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    //  console.log(`🚀 Server running on http://localhost:${PORT}`);
   });
 };
 

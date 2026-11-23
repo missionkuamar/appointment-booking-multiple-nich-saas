@@ -12,10 +12,10 @@ import AffiliateLink from './AffiliateLink.models.js';
 
 export const getWithdrawals = async (req, res) => {
   try {
-    console.log("[getWithdrawals] Request received:", {
-      userId: req.user?._id || req.user?.id,
-      query: req.query,
-    });
+    // console.log("[getWithdrawals] Request received:", {
+    //   userId: req.user?._id || req.user?.id,
+    //   query: req.query,
+    // });
 
     const userId = req.user?._id || req.user?.id;
 
@@ -23,11 +23,11 @@ export const getWithdrawals = async (req, res) => {
     // FIND AFFILIATE
     // ==========================================================
 
-    console.log("[getWithdrawals] Looking up affiliate for userId:", userId);
+    // console.log("[getWithdrawals] Looking up affiliate for userId:", userId);
     const affiliate = await Affiliate.findOne({
       user: userId,
     }).select("_id");
-    console.log("[getWithdrawals] Affiliate lookup result:", affiliate?._id || null);
+    // console.log("[getWithdrawals] Affiliate lookup result:", affiliate?._id || null);
 
     if (!affiliate) {
       console.warn("[getWithdrawals] Affiliate not found for userId:", userId);
@@ -77,14 +77,14 @@ export const getWithdrawals = async (req, res) => {
       ? requestedLimit
       : 20;
 
-    console.log("[getWithdrawals] Parsed pagination params:", {
-      rawPage: page,
-      rawLimit: limit,
-      pageNum,
-      requestedLimit,
-      limitNum,
-      status: status || "ALL",
-    });
+    // console.log("[getWithdrawals] Parsed pagination params:", {
+    //   rawPage: page,
+    //   rawLimit: limit,
+    //   pageNum,
+    //   requestedLimit,
+    //   limitNum,
+    //   status: status || "ALL",
+    // });
 
     // ==========================================================
     // BUILD QUERY
@@ -98,7 +98,7 @@ export const getWithdrawals = async (req, res) => {
       query.status = status;
     }
 
-    console.log("[getWithdrawals] Built Mongo query:", query);
+    // console.log("[getWithdrawals] Built Mongo query:", query);
 
     // ==========================================================
     // TOTAL COUNT
@@ -133,12 +133,12 @@ export const getWithdrawals = async (req, res) => {
     const skip =
       (currentPage - 1) * limitNum;
 
-    console.log("[getWithdrawals] Pagination math:", {
-      total,
-      totalPages,
-      currentPage,
-      skip,
-    });
+    // console.log("[getWithdrawals] Pagination math:", {
+    //   total,
+    //   totalPages,
+    //   currentPage,
+    //   skip,
+    // });
 
     // ==========================================================
     // FETCH ONLY REQUIRED RECORDS
@@ -154,7 +154,7 @@ export const getWithdrawals = async (req, res) => {
         .limit(limitNum)
         .lean();
 
-    console.log("[getWithdrawals] Fetched withdrawals count:", withdrawals.length);
+    // console.log("[getWithdrawals] Fetched withdrawals count:", withdrawals.length);
 
     // ==========================================================
     // ITEM RANGE
@@ -197,7 +197,7 @@ export const getWithdrawals = async (req, res) => {
       hasData: total > 0,
     };
 
-    console.log("[getWithdrawals] Final pagination object:", pagination);
+    // console.log("[getWithdrawals] Final pagination object:", pagination);
 
     // ==========================================================
     // PAGINATION RESPONSE
@@ -233,19 +233,19 @@ export const getWithdrawals = async (req, res) => {
 export const getReferrals = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id;
-    console.log('[getReferrals] userId:', userId);
+    // console.log('[getReferrals] userId:', userId);
 
     if (!userId) {
-      console.log('[getReferrals] Warning: userId missing from req.user', req.user);
+      // console.log('[getReferrals] Warning: userId missing from req.user', req.user);
     }
 
     const affiliate = await Affiliate.findOne({
       user: userId,
     });
-    console.log('[getReferrals] affiliate found:', affiliate ? affiliate._id : null);
+    // console.log('[getReferrals] affiliate found:', affiliate ? affiliate._id : null);
 
     if (!affiliate) {
-      console.log('[getReferrals] Affiliate not found for userId:', userId);
+      // console.log('[getReferrals] Affiliate not found for userId:', userId);
       return res.status(404).json({
         success: false,
         message: 'Not an affiliate member',
@@ -257,7 +257,7 @@ export const getReferrals = async (req, res) => {
       page = 1,
       limit = 20,
     } = req.query;
-    console.log('[getReferrals] req.query:', { status, page, limit });
+    // console.log('[getReferrals] req.query:', { status, page, limit });
 
     const pageNum = Math.max(Number(page) || 1, 1);
 
@@ -271,7 +271,7 @@ export const getReferrals = async (req, res) => {
     };
 
     if (status) query.status = status;
-    console.log('[getReferrals] MongoDB query:', query, { pageNum, limitNum });
+    // console.log('[getReferrals] MongoDB query:', query, { pageNum, limitNum });
 
     const skip = (pageNum - 1) * limitNum;
 
@@ -286,7 +286,7 @@ export const getReferrals = async (req, res) => {
       AffiliateReferral.countDocuments(query),
     ]);
 
-    console.log('[getReferrals] fetched referrals count:', referrals.length, '| total matching docs:', total);
+    // console.log('[getReferrals] fetched referrals count:', referrals.length, '| total matching docs:', total);
 
     const totalPages = Math.max(
       1,
@@ -321,17 +321,17 @@ export const getReferrals = async (req, res) => {
 // @route   POST /api/affiliate/links
 export const createAffiliateLink = async (req, res) => {
   try {
-    console.log("[createAffiliateLink] Request received:", {
-      userId: req.user?._id,
-      body: req.body,
-    });
+    // console.log("[createAffiliateLink] Request received:", {
+    //   userId: req.user?._id,
+    //   body: req.body,
+    // });
 
     const { name, destination, slug } = req.body;
     const userId = req.user._id;
 
-    console.log("[createAffiliateLink] Looking up affiliate for userId:", userId);
+    // console.log("[createAffiliateLink] Looking up affiliate for userId:", userId);
     const affiliate = await Affiliate.findOne({ user: userId });
-    console.log("[createAffiliateLink] Affiliate lookup result:", affiliate?._id || null);
+    // console.log("[createAffiliateLink] Affiliate lookup result:", affiliate?._id || null);
 
     if (!affiliate) {
       console.warn("[createAffiliateLink] User is not an affiliate member:", userId);
@@ -342,9 +342,9 @@ export const createAffiliateLink = async (req, res) => {
     }
 
     if (slug) {
-      console.log("[createAffiliateLink] Checking existing slug:", slug);
+      // console.log("[createAffiliateLink] Checking existing slug:", slug);
       const existing = await AffiliateLink.findOne({ slug });
-      console.log("[createAffiliateLink] Existing slug lookup:", existing?._id || null);
+      // console.log("[createAffiliateLink] Existing slug lookup:", existing?._id || null);
 
       if (existing) {
         console.warn("[createAffiliateLink] Slug already taken:", slug);
@@ -354,7 +354,7 @@ export const createAffiliateLink = async (req, res) => {
         });
       }
     } else {
-      console.log("[createAffiliateLink] No custom slug provided; will generate random slug");
+      // console.log("[createAffiliateLink] No custom slug provided; will generate random slug");
     }
 
     const payload = {
@@ -364,25 +364,25 @@ export const createAffiliateLink = async (req, res) => {
       slug: slug || Math.random().toString(36).substring(2, 10),
       status: 'active',
     };
-    console.log("[createAffiliateLink] Creating AffiliateLink with payload:", payload);
+    // console.log("[createAffiliateLink] Creating AffiliateLink with payload:", payload);
 
     const link = await AffiliateLink.create(payload);
-    console.log("[createAffiliateLink] Created link:", link._id, link);
+    // console.log("[createAffiliateLink] Created link:", link._id, link);
 
     // Generate full link URL
     const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const linkUrl = `${baseUrl}/r/${link.slug}?ref=${affiliate.affiliateCode}`;
-    console.log("[createAffiliateLink] Generated fullUrl:", {
-      FRONTEND_URL: process.env.FRONTEND_URL,
-      baseUrl,
-      linkUrl,
-    });
+    // console.log("[createAffiliateLink] Generated fullUrl:", {
+    //   FRONTEND_URL: process.env.FRONTEND_URL,
+    //   baseUrl,
+    //   linkUrl,
+    // });
 
     const responseData = {
       ...link.toObject(),
       fullUrl: linkUrl,
     };
-    console.log("[createAffiliateLink] Sending 201 response:", responseData);
+    // console.log("[createAffiliateLink] Sending 201 response:", responseData);
 
     res.status(201).json({
       success: true,
@@ -451,22 +451,22 @@ export const deleteAffiliateLink = async (req, res) => {
 // @route   POST /api/affiliate/track-conversion
 export const trackAffiliateConversion = async (req, res) => {
   try {
-    console.log("[trackAffiliateConversion] Request received:", {
-      userId: req.user?._id,
-      body: req.body,
-    });
+    // console.log("[trackAffiliateConversion] Request received:", {
+    //   userId: req.user?._id,
+    //   body: req.body,
+    // });
 
     const { plan, amount } = req.body;
     const userId = req.user._id;
 
     // Check if user came from affiliate link
-    console.log("[trackAffiliateConversion] Searching registered referral for userId:", userId);
+    // console.log("[trackAffiliateConversion] Searching registered referral for userId:", userId);
     const referral = await AffiliateReferral.findOne({
       referredUser: userId,
       status: 'registered',
     }).sort({ createdAt: -1 });
 
-    console.log("[trackAffiliateConversion] Referral lookup result:", referral?._id || null, referral);
+    // console.log("[trackAffiliateConversion] Referral lookup result:", referral?._id || null, referral);
 
     if (!referral) {
       console.warn("[trackAffiliateConversion] No 'registered' affiliate referral found for userId:", userId);
@@ -474,38 +474,38 @@ export const trackAffiliateConversion = async (req, res) => {
     }
 
     // Update referral
-    console.log("[trackAffiliateConversion] Updating referral status to 'converted':", {
-      referralId: referral._id,
-      plan,
-      amount,
-    });
+    // console.log("[trackAffiliateConversion] Updating referral status to 'converted':", {
+    //   referralId: referral._id,
+    //   plan,
+    //   amount,
+    // });
 
     referral.status = 'converted';
     referral.subscriptionPlan = plan;
     referral.subscriptionAmount = amount;
     referral.convertedAt = new Date();
     await referral.save();
-    console.log("[trackAffiliateConversion] Referral saved with converted status:", referral._id);
+    // console.log("[trackAffiliateConversion] Referral saved with converted status:", referral._id);
 
     // Update affiliate stats
-    console.log("[trackAffiliateConversion] Fetching affiliate:", referral.affiliate);
+    // console.log("[trackAffiliateConversion] Fetching affiliate:", referral.affiliate);
     const affiliate = await Affiliate.findById(referral.affiliate);
-    console.log("[trackAffiliateConversion] Affiliate found:", affiliate?._id || null);
+    // console.log("[trackAffiliateConversion] Affiliate found:", affiliate?._id || null);
 
     if (affiliate) {
       const numericAmount = Number(amount) || 0;
       const commissionRate = Number(affiliate.commissionRate) || 0;
       const commission = (numericAmount * commissionRate) / 100;
 
-      console.log("[trackAffiliateConversion] Before affiliate update:", {
-        affiliateId: affiliate._id,
-        totalReferrals: affiliate.totalReferrals,
-        totalConversions: affiliate.totalConversions,
-        totalEarnings: affiliate.totalEarnings,
-        commissionRate,
-        amount: numericAmount,
-        calculatedCommission: commission,
-      });
+      // console.log("[trackAffiliateConversion] Before affiliate update:", {
+      //   affiliateId: affiliate._id,
+      //   totalReferrals: affiliate.totalReferrals,
+      //   totalConversions: affiliate.totalConversions,
+      //   totalEarnings: affiliate.totalEarnings,
+      //   commissionRate,
+      //   amount: numericAmount,
+      //   calculatedCommission: commission,
+      // });
 
       affiliate.totalReferrals += 1;
       affiliate.totalConversions += 1;
@@ -515,18 +515,18 @@ export const trackAffiliateConversion = async (req, res) => {
 
       await Promise.all([referral.save(), affiliate.save()]);
 
-      console.log("[trackAffiliateConversion] After affiliate update:", {
-        affiliateId: affiliate._id,
-        referralCommission: referral.commission,
-        totalReferrals: affiliate.totalReferrals,
-        totalConversions: affiliate.totalConversions,
-        totalEarnings: affiliate.totalEarnings,
-      });
+      // console.log("[trackAffiliateConversion] After affiliate update:", {
+      //   affiliateId: affiliate._id,
+      //   referralCommission: referral.commission,
+      //   totalReferrals: affiliate.totalReferrals,
+      //   totalConversions: affiliate.totalConversions,
+      //   totalEarnings: affiliate.totalEarnings,
+      // });
     } else {
       console.warn("[trackAffiliateConversion] Affiliate document not found for id:", referral.affiliate);
     }
 
-    console.log("[trackAffiliateConversion] Conversion tracked successfully for userId:", userId);
+    // console.log("[trackAffiliateConversion] Conversion tracked successfully for userId:", userId);
     res.status(200).json({
       success: true,
       message: 'Conversion tracked successfully',
@@ -550,20 +550,20 @@ export const trackAffiliateConversion = async (req, res) => {
 export const trackAffiliateClick = async (req, res) => {
   const START_TIME = Date.now();
 
-  console.log("\n");
-  console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║          🚀 TRACK AFFILIATE CLICK - START                  ║");
-  console.log("╚══════════════════════════════════════════════════════════════╝");
+  // console.log("\n");
+  // console.log("╔══════════════════════════════════════════════════════════════╗");
+  // console.log("║          🚀 TRACK AFFILIATE CLICK - START                  ║");
+  // console.log("╚══════════════════════════════════════════════════════════════╝");
 
   try {
     // =========================================================
     // STEP 1: REQUEST INFORMATION
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📥 STEP 1: REQUEST INFORMATION");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📥 STEP 1: REQUEST INFORMATION");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const { slug } = req.params;
     const { ref } = req.query;
@@ -582,57 +582,57 @@ export const trackAffiliateClick = async (req, res) => {
       req.headers.referrer ||
       "direct";
 
-    console.log("🌐 Request Information:");
-    console.log("   Method        :", req.method);
-    console.log("   Original URL  :", req.originalUrl);
-    console.log("   Protocol      :", req.protocol);
-    console.log("   Host          :", req.get("host"));
-    console.log("   Slug          :", slug);
-    console.log("   Ref           :", ref || "EMPTY");
-    console.log("   IP            :", ip);
-    console.log("   User-Agent    :", userAgent);
-    console.log("   Browser Ref   :", referrer);
+    // console.log("🌐 Request Information:");
+    // console.log("   Method        :", req.method);
+    // console.log("   Original URL  :", req.originalUrl);
+    // console.log("   Protocol      :", req.protocol);
+    // console.log("   Host          :", req.get("host"));
+    // console.log("   Slug          :", slug);
+    // console.log("   Ref           :", ref || "EMPTY");
+    // console.log("   IP            :", ip);
+    // console.log("   User-Agent    :", userAgent);
+    // console.log("   Browser Ref   :", referrer);
 
     // =========================================================
     // STEP 2: SESSION INFORMATION
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🍪 STEP 2: SESSION INFORMATION");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🍪 STEP 2: SESSION INFORMATION");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    console.log("🍪 Session exists        :", !!req.session);
-    console.log("🍪 Session ID            :", req.sessionID || "NO SESSION ID");
-    console.log(
-      "🍪 Session cookie exists :",
-      !!req.headers.cookie
-    );
+    // console.log("🍪 Session exists        :", !!req.session);
+    // console.log("🍪 Session ID            :", req.sessionID || "NO SESSION ID");
+    // console.log(
+    //   "🍪 Session cookie exists :",
+    //   !!req.headers.cookie
+    // );
 
-    console.log(
-      "🍪 Existing referral     :",
-      req.session?.affiliateReferral || "NONE"
-    );
+    // console.log(
+    //   "🍪 Existing referral     :",
+    //   req.session?.affiliateReferral || "NONE"
+    // );
 
     if (req.session?.affiliateReferral) {
-      console.log("⚠️ Existing affiliate referral already exists:");
-      console.log(
-        JSON.stringify(
-          req.session.affiliateReferral,
-          null,
-          2
-        )
-      );
+      // console.log("⚠️ Existing affiliate referral already exists:");
+      // console.log(
+      //   JSON.stringify(
+      //     req.session.affiliateReferral,
+      //     null,
+      //     2
+      //   )
+      // );
     }
 
     // =========================================================
     // STEP 3: VALIDATE SLUG
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔍 STEP 3: VALIDATING SLUG");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🔍 STEP 3: VALIDATING SLUG");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     if (!slug) {
       console.error("❌ SLUG IS MISSING");
@@ -641,47 +641,47 @@ export const trackAffiliateClick = async (req, res) => {
       return res.redirect("/");
     }
 
-    console.log("✅ Slug received:", slug);
+    // console.log("✅ Slug received:", slug);
 
     // =========================================================
     // STEP 4: VALIDATE REF
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🎯 STEP 4: VALIDATING AFFILIATE REF");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🎯 STEP 4: VALIDATING AFFILIATE REF");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     if (!ref) {
       console.error("❌ AFFILIATE REF IS MISSING");
 
-      console.log("⚠️ Expected URL format:");
-      console.log(
-        `   /r/${slug}?ref=AFFILIATE_CODE`
-      );
+      // console.log("⚠️ Expected URL format:");
+      // console.log(
+      //   `   /r/${slug}?ref=AFFILIATE_CODE`
+      // );
 
-      console.log("📦 Query received:");
-      console.log(req.query);
+      // console.log("📦 Query received:");
+      // console.log(req.query);
 
       return res.redirect("/");
     }
 
-    console.log("✅ Affiliate ref received:", ref);
-    console.log("✅ Ref length:", ref.length);
+    // console.log("✅ Affiliate ref received:", ref);
+    // console.log("✅ Ref length:", ref.length);
 
     // =========================================================
     // STEP 5: FIND AFFILIATE LINK
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔎 STEP 5: FINDING AFFILIATE LINK");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🔎 STEP 5: FINDING AFFILIATE LINK");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    console.log(
-      "🔎 Searching AffiliateLink with slug:",
-      slug
-    );
+    // console.log(
+    //   "🔎 Searching AffiliateLink with slug:",
+    //   slug
+    // );
 
     const link = await AffiliateLink.findOne({
       slug,
@@ -691,37 +691,37 @@ export const trackAffiliateClick = async (req, res) => {
       console.error("❌ AFFILIATE LINK NOT FOUND");
       console.error("❌ Requested slug:", slug);
 
-      console.log("⚠️ Possible reason:");
-      console.log("   - Slug does not exist");
-      console.log("   - Affiliate link was deleted");
-      console.log("   - Wrong affiliate URL");
+      // console.log("⚠️ Possible reason:");
+      // console.log("   - Slug does not exist");
+      // console.log("   - Affiliate link was deleted");
+      // console.log("   - Wrong affiliate URL");
 
       return res.redirect("/");
     }
 
-    console.log("✅ AFFILIATE LINK FOUND");
+    // console.log("✅ AFFILIATE LINK FOUND");
 
-    console.log("🔗 Link Information:");
-    console.log("   Link ID       :", link._id);
-    console.log("   Slug          :", link.slug);
-    console.log("   Affiliate ID  :", link.affiliate);
-    console.log("   Destination   :", link.destination || "/");
-    console.log("   Current clicks:", link.clicks);
+    // console.log("🔗 Link Information:");
+    // console.log("   Link ID       :", link._id);
+    // console.log("   Slug          :", link.slug);
+    // console.log("   Affiliate ID  :", link.affiliate);
+    // console.log("   Destination   :", link.destination || "/");
+    // console.log("   Current clicks:", link.clicks);
 
     // =========================================================
     // STEP 6: FIND AFFILIATE
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("👤 STEP 6: FINDING AFFILIATE");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("👤 STEP 6: FINDING AFFILIATE");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    console.log("🔎 Searching Affiliate with:");
-    console.log({
-      affiliateId: link.affiliate,
-      affiliateCode: ref,
-    });
+    // console.log("🔎 Searching Affiliate with:");
+    // console.log({
+    //   affiliateId: link.affiliate,
+    //   affiliateCode: ref,
+    // });
 
     const affiliate = await Affiliate.findOne({
       _id: link.affiliate,
@@ -734,100 +734,100 @@ export const trackAffiliateClick = async (req, res) => {
       console.error("❌ Search values:");
       console.error("   Affiliate ID :", link.affiliate);
       console.error("   Affiliate Ref:", ref);
-
-      console.log("⚠️ Possible reasons:");
-      console.log("   1. Affiliate code is incorrect");
-      console.log("   2. Affiliate belongs to another link");
-      console.log("   3. Affiliate was deleted");
-      console.log("   4. URL contains wrong ref");
+  
+      // console.log("⚠️ Possible reasons:");
+      // console.log("   1. Affiliate code is incorrect");
+      // console.log("   2. Affiliate belongs to another link");
+      // console.log("   3. Affiliate was deleted");
+      // console.log("   4. URL contains wrong ref");
 
       return res.redirect("/");
     }
 
-    console.log("✅ AFFILIATE FOUND");
+    // console.log("✅ AFFILIATE FOUND");
 
-    console.log("👤 Affiliate Information:");
-    console.log("   Affiliate ID  :", affiliate._id);
-    console.log("   Affiliate Code:", affiliate.affiliateCode);
-    console.log("   Affiliate User:", affiliate.user);
-    console.log("   Status        :", affiliate.status);
-    console.log("   Total Clicks  :", affiliate.totalClicks);
+    // console.log("👤 Affiliate Information:");
+    // console.log("   Affiliate ID  :", affiliate._id);
+    // console.log("   Affiliate Code:", affiliate.affiliateCode);
+    // console.log("   Affiliate User:", affiliate.user);
+    // console.log("   Status        :", affiliate.status);
+    // console.log("   Total Clicks  :", affiliate.totalClicks);
 
     // =========================================================
     // STEP 7: UPDATE AFFILIATE LINK CLICK
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📈 STEP 7: UPDATING AFFILIATE LINK CLICKS");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📈 STEP 7: UPDATING AFFILIATE LINK CLICKS");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const linkClicksBefore = Number(link.clicks || 0);
 
-    console.log(
-      "📊 Link clicks BEFORE:",
-      linkClicksBefore
-    );
+    // console.log(
+    //   "📊 Link clicks BEFORE:",
+    //   linkClicksBefore
+    // );
 
     link.clicks = linkClicksBefore + 1;
 
     await link.save();
 
-    console.log(
-      "📊 Link clicks AFTER :",
-      link.clicks
-    );
+    // console.log(
+    //   "📊 Link clicks AFTER :",
+    //   link.clicks
+    // );
 
-    console.log("✅ AffiliateLink click saved");
+    // console.log("✅ AffiliateLink click saved");
 
     // =========================================================
     // STEP 8: UPDATE AFFILIATE TOTAL CLICKS
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📊 STEP 8: UPDATING AFFILIATE TOTAL CLICKS");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📊 STEP 8: UPDATING AFFILIATE TOTAL CLICKS");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const affiliateClicksBefore =
       Number(affiliate.totalClicks || 0);
 
-    console.log(
-      "📊 Affiliate clicks BEFORE:",
-      affiliateClicksBefore
-    );
+    // console.log(
+    //   "📊 Affiliate clicks BEFORE:",
+    //   affiliateClicksBefore
+    // );
 
     affiliate.totalClicks =
       affiliateClicksBefore + 1;
 
     await affiliate.save();
 
-    console.log(
-      "📊 Affiliate clicks AFTER :",
-      affiliate.totalClicks
-    );
+    // console.log(
+    //   "📊 Affiliate clicks AFTER :",
+    //   affiliate.totalClicks
+    // );
 
-    console.log("✅ Affiliate totalClicks saved");
+    // console.log("✅ Affiliate totalClicks saved");
 
     // =========================================================
     // STEP 9: CREATE REFERRAL RECORD
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("📝 STEP 9: CREATING AFFILIATE REFERRAL");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("📝 STEP 9: CREATING AFFILIATE REFERRAL");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    console.log("📝 Referral data:");
+    // console.log("📝 Referral data:");
 
-    console.log({
-      affiliate: affiliate._id,
-      affiliateLink: link._id,
-      ip,
-      userAgent,
-      referrer,
-      status: "clicked",
-    });
+    // console.log({
+    //   affiliate: affiliate._id,
+    //   affiliateLink: link._id,
+    //   ip,
+    //   userAgent,
+    //   referrer,
+    //   status: "clicked",
+    // });
 
     const referral = await AffiliateReferral.create({
       affiliate: affiliate._id,
@@ -838,24 +838,24 @@ export const trackAffiliateClick = async (req, res) => {
       status: "clicked",
     });
 
-    console.log("✅ REFERRAL CREATED");
+    // console.log("✅ REFERRAL CREATED");
 
-    console.log("📝 Referral Information:");
-    console.log("   Referral ID :", referral._id);
-    console.log("   Affiliate    :", referral.affiliate);
-    console.log("   Link         :", referral.affiliateLink);
-    console.log("   Status       :", referral.status);
-    console.log("   IP           :", referral.ip);
-    console.log("   Referrer     :", referral.referrer);
+    // console.log("📝 Referral Information:");
+    // console.log("   Referral ID :", referral._id);
+    // console.log("   Affiliate    :", referral.affiliate);
+    // console.log("   Link         :", referral.affiliateLink);
+    // console.log("   Status       :", referral.status);
+    // console.log("   IP           :", referral.ip);
+    // console.log("   Referrer     :", referral.referrer);
 
     // =========================================================
     // STEP 10: SAVE REFERRAL TO SESSION
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🍪 STEP 10: SAVING REFERRAL TO SESSION");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🍪 STEP 10: SAVING REFERRAL TO SESSION");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     if (!req.session) {
       console.error(
@@ -877,26 +877,26 @@ export const trackAffiliateClick = async (req, res) => {
       slug: link.slug,
     };
 
-    console.log(
-      "💾 Session referral data prepared:"
-    );
+    // console.log(
+    //   "💾 Session referral data prepared:"
+    // );
 
-    console.log(
-      JSON.stringify(
-        req.session.affiliateReferral,
-        null,
-        2
-      )
-    );
+    // console.log(
+    //   JSON.stringify(
+    //     req.session.affiliateReferral,
+    //     null,
+    //     2
+    //   )
+    // );
 
     // =========================================================
     // STEP 11: SAVE SESSION
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("💾 STEP 11: SAVING SESSION");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("💾 STEP 11: SAVING SESSION");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     await new Promise((resolve, reject) => {
       req.session.save((err) => {
@@ -920,26 +920,26 @@ export const trackAffiliateClick = async (req, res) => {
           return;
         }
 
-        console.log(
-          "✅ SESSION SAVED SUCCESSFULLY"
-        );
+        // console.log(
+        //   "✅ SESSION SAVED SUCCESSFULLY"
+        // );
 
-        console.log(
-          "🍪 Session ID:",
-          req.sessionID
-        );
+        // console.log(
+        //   "🍪 Session ID:",
+        //   req.sessionID
+        // );
 
-        console.log(
-          "🍪 Session affiliateReferral:"
-        );
+        // console.log(
+        //   "🍪 Session affiliateReferral:"
+        // );
 
-        console.log(
-          JSON.stringify(
-            req.session.affiliateReferral,
-            null,
-            2
-          )
-        );
+        // console.log(
+        //   JSON.stringify(
+        //     req.session.affiliateReferral,
+        //     null,
+        //     2
+        //   )
+        // );
 
         resolve();
       });
@@ -949,40 +949,40 @@ export const trackAffiliateClick = async (req, res) => {
     // STEP 12: VERIFY SESSION
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔐 STEP 12: VERIFYING SESSION DATA");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🔐 STEP 12: VERIFYING SESSION DATA");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    console.log(
-      "🍪 Session ID:",
-      req.sessionID
-    );
+    // console.log(
+    //   "🍪 Session ID:",
+    //   req.sessionID
+    // );
 
-    console.log(
-      "🍪 Referral ID:",
-      req.session?.affiliateReferral?.referralId
-    );
+    // console.log(
+    //   "🍪 Referral ID:",
+    //   req.session?.affiliateReferral?.referralId
+    // );
 
-    console.log(
-      "👤 Affiliate ID:",
-      req.session?.affiliateReferral?.affiliateId
-    );
+    // console.log(
+    //   "👤 Affiliate ID:",
+    //   req.session?.affiliateReferral?.affiliateId
+    // );
 
-    console.log(
-      "🔗 Link ID:",
-      req.session?.affiliateReferral?.linkId
-    );
+    // console.log(
+    //   "🔗 Link ID:",
+    //   req.session?.affiliateReferral?.linkId
+    // );
 
-    console.log(
-      "🎯 Affiliate Code:",
-      req.session?.affiliateReferral?.affiliateCode
-    );
+    // console.log(
+    //   "🎯 Affiliate Code:",
+    //   req.session?.affiliateReferral?.affiliateCode
+    // );
 
     if (req.session?.affiliateReferral?.referralId) {
-      console.log(
-        "✅ SESSION VERIFICATION PASSED"
-      );
+      // console.log(
+      //   "✅ SESSION VERIFICATION PASSED"
+      // );
     } else {
       console.error(
         "❌ SESSION VERIFICATION FAILED"
@@ -993,10 +993,10 @@ export const trackAffiliateClick = async (req, res) => {
     // STEP 13: REDIRECT TO LOGIN
     // =========================================================
 
-    console.log("\n");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("🔄 STEP 13: REDIRECTING TO FRONTEND LOGIN");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("\n");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    // console.log("🔄 STEP 13: REDIRECTING TO FRONTEND LOGIN");
+    // console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
     const frontendUrl =
       process.env.CLIENT_URL ||
@@ -1005,20 +1005,20 @@ export const trackAffiliateClick = async (req, res) => {
     const loginUrl =
       `${frontendUrl}/login?ref=${encodeURIComponent(ref)}`;
 
-    console.log(
-      "🌐 Frontend URL:",
-      frontendUrl
-    );
+    // console.log(
+    //   "🌐 Frontend URL:",
+    //   frontendUrl
+    // );
 
-    console.log(
-      "🎯 Affiliate Ref:",
-      ref
-    );
+    // console.log(
+    //   "🎯 Affiliate Ref:",
+    //   ref
+    // );
 
-    console.log(
-      "🔗 Login URL:",
-      loginUrl
-    );
+    // console.log(
+    //   "🔗 Login URL:",
+    //   loginUrl
+    // );
 
     // =========================================================
     // FINAL SUCCESS LOG
@@ -1027,26 +1027,26 @@ export const trackAffiliateClick = async (req, res) => {
     const duration =
       Date.now() - START_TIME;
 
-    console.log("\n");
-    console.log("╔══════════════════════════════════════════════════════════════╗");
-    console.log("║       ✅ TRACK AFFILIATE CLICK - SUCCESS                   ║");
-    console.log("╚══════════════════════════════════════════════════════════════╝");
+    // console.log("\n");
+    // console.log("╔══════════════════════════════════════════════════════════════╗");
+    // console.log("║       ✅ TRACK AFFILIATE CLICK - SUCCESS                   ║");
+    // console.log("╚══════════════════════════════════════════════════════════════╝");
 
-    console.log("📊 SUMMARY");
-    console.log("   Slug          :", slug);
-    console.log("   Affiliate Code:", ref);
-    console.log("   Affiliate ID  :", affiliate._id);
-    console.log("   Link ID       :", link._id);
-    console.log("   Referral ID   :", referral._id);
-    console.log("   Link Clicks   :", link.clicks);
-    console.log("   Affiliate Clicks:", affiliate.totalClicks);
-    console.log("   Session ID    :", req.sessionID);
-    console.log("   Redirect      :", loginUrl);
-    console.log("   Duration      :", `${duration}ms`);
+    // console.log("📊 SUMMARY");
+    // console.log("   Slug          :", slug);
+    // console.log("   Affiliate Code:", ref);
+    // console.log("   Affiliate ID  :", affiliate._id);
+    // console.log("   Link ID       :", link._id);
+    // console.log("   Referral ID   :", referral._id);
+    // console.log("   Link Clicks   :", link.clicks);
+    // console.log("   Affiliate Clicks:", affiliate.totalClicks);
+    // console.log("   Session ID    :", req.sessionID);
+    // console.log("   Redirect      :", loginUrl);
+    // console.log("   Duration      :", `${duration}ms`);
 
-    console.log("==============================================================");
-    console.log("➡️ REDIRECTING USER NOW");
-    console.log("==============================================================\n");
+    // console.log("==============================================================");
+    // console.log("➡️ REDIRECTING USER NOW");
+    // console.log("==============================================================\n");
 
     return res.redirect(loginUrl);
 
@@ -1152,13 +1152,13 @@ export const requestWithdrawal = async (req, res) => {
 
     const userId = req.user?._id || req.user?.id;
 
-    console.log(`🚀 [${traceId}][requestWithdrawal] START`, {
-      userId,
-      rawAmount: amount,
-      paymentMethod,
-      hasPaymentDetails: !!paymentDetails,
-      notesLength: notes ? String(notes).length : 0,
-    });
+    // console.log(`🚀 [${traceId}][requestWithdrawal] START`, {
+    //   userId,
+    //   rawAmount: amount,
+    //   paymentMethod,
+    //   hasPaymentDetails: !!paymentDetails,
+    //   notesLength: notes ? String(notes).length : 0,
+    // });
 
     // ==========================
     // Validate User
@@ -1214,11 +1214,11 @@ export const requestWithdrawal = async (req, res) => {
       const hasAccount = !!paymentDetails.accountNumber;
       const hasIfsc = !!paymentDetails.ifsc;
 
-      console.log(`🔍 [${traceId}][requestWithdrawal] Checking bank details:`, {
-        hasHolder,
-        hasAccount,
-        hasIfsc,
-      });
+      // console.log(`🔍 [${traceId}][requestWithdrawal] Checking bank details:`, {
+      //   hasHolder,
+      //   hasAccount,
+      //   hasIfsc,
+      // });
 
       if (!hasHolder || !hasAccount || !hasIfsc) {
         console.warn(`⚠️ [${traceId}][requestWithdrawal] Incomplete bank details`);
@@ -1231,7 +1231,7 @@ export const requestWithdrawal = async (req, res) => {
       }
     } else if (paymentMethod === "upi") {
       const hasUpi = !!paymentDetails.upiId;
-      console.log(`🔍 [${traceId}][requestWithdrawal] Checking UPI details:`, { hasUpi });
+      // console.log(`🔍 [${traceId}][requestWithdrawal] Checking UPI details:`, { hasUpi });
 
       if (!hasUpi) {
         console.warn(`⚠️ [${traceId}][requestWithdrawal] Missing UPI ID`);
@@ -1261,19 +1261,19 @@ export const requestWithdrawal = async (req, res) => {
       });
     }
 
-    console.log(`✅ [${traceId}][requestWithdrawal] User found:`, {
-      userId: user._id,
-      email: user.email,
-      role: user.role,
-    });
+    // console.log(`✅ [${traceId}][requestWithdrawal] User found:`, {
+    //   userId: user._id,
+    //   email: user.email,
+    //   role: user.role,
+    // });
 
     // ==========================
     // Atomic Balance Update
     // ==========================
-    console.log(`💸 [${traceId}][requestWithdrawal] Attempting atomic balance deduction:`, {
-      userId,
-      withdrawAmount,
-    });
+    // console.log(`💸 [${traceId}][requestWithdrawal] Attempting atomic balance deduction:`, {
+    //   userId,
+    //   withdrawAmount,
+    // });
 
     const affiliate = await Affiliate.findOneAndUpdate(
       {
@@ -1312,11 +1312,11 @@ export const requestWithdrawal = async (req, res) => {
       });
     }
 
-    console.log(`💾 [${traceId}][requestWithdrawal] Affiliate balance updated:`, {
-      affiliateId: affiliate._id,
-      remainingEarnings: affiliate.totalEarnings,
-      totalWithdrawn: affiliate.totalWithdrawn,
-    });
+    // console.log(`💾 [${traceId}][requestWithdrawal] Affiliate balance updated:`, {
+    //   affiliateId: affiliate._id,
+    //   remainingEarnings: affiliate.totalEarnings,
+    //   totalWithdrawn: affiliate.totalWithdrawn,
+    // });
 
     // ==========================
     // Create Withdrawal
@@ -1340,11 +1340,11 @@ export const requestWithdrawal = async (req, res) => {
       { session }
     );
 
-    console.log(`📝 [${traceId}][requestWithdrawal] Withdrawal created:`, {
-      withdrawalId: withdrawal._id,
-      amount: withdrawal.amount,
-      status: withdrawal.status,
-    });
+    // console.log(`📝 [${traceId}][requestWithdrawal] Withdrawal created:`, {
+    //   withdrawalId: withdrawal._id,
+    //   amount: withdrawal.amount,
+    //   status: withdrawal.status,
+    // });
 
     // ==========================
     // Find Admins
@@ -1355,7 +1355,7 @@ export const requestWithdrawal = async (req, res) => {
       .select("_id")
       .lean();
 
-    console.log(`👥 [${traceId}][requestWithdrawal] Admins found for notification:`, admins.length);
+    // console.log(`👥 [${traceId}][requestWithdrawal] Admins found for notification:`, admins.length);
 
     // ==========================
     // Notifications
@@ -1387,13 +1387,13 @@ export const requestWithdrawal = async (req, res) => {
     });
 
     await Notification.insertMany(notifications, { session });
-    console.log(`🔔 [${traceId}][requestWithdrawal] Notifications inserted:`, notifications.length);
+    // console.log(`🔔 [${traceId}][requestWithdrawal] Notifications inserted:`, notifications.length);
 
     // ==========================
     // Commit
     // ==========================
     await session.commitTransaction();
-    console.log(`✅ [${traceId}][requestWithdrawal] TRANSACTION COMMITTED SUCCESSFULLY`);
+    // console.log(`✅ [${traceId}][requestWithdrawal] TRANSACTION COMMITTED SUCCESSFULLY`);
 
     return res.status(201).json({
       success: true,
@@ -1412,7 +1412,7 @@ export const requestWithdrawal = async (req, res) => {
 
     try {
       await session.abortTransaction();
-      console.log(`↩️ [${traceId}][requestWithdrawal] Transaction aborted`);
+      // console.log(`↩️ [${traceId}][requestWithdrawal] Transaction aborted`);
     } catch (abortErr) {
       console.error(`⚠️ [${traceId}][requestWithdrawal] Abort transaction failed:`, abortErr.message);
     }
@@ -1423,7 +1423,7 @@ export const requestWithdrawal = async (req, res) => {
     });
   } finally {
     await session.endSession();
-    console.log(`🔒 [${traceId}][requestWithdrawal] Session ended`);
+    // console.log(`🔒 [${traceId}][requestWithdrawal] Session ended`);
   }
 };
 
@@ -1435,10 +1435,10 @@ export const requestWithdrawal = async (req, res) => {
 
 export const getAffiliateDashboard = async (req, res) => {
   try {
-    console.log("[getAffiliateDashboard] Request received:", {
-      userId: req.user?._id,
-      query: req.query,
-    });
+    // console.log("[getAffiliateDashboard] Request received:", {
+    //   userId: req.user?._id,
+    //   query: req.query,
+    // });
 
     const userId = req.user._id;
 
@@ -1449,7 +1449,7 @@ export const getAffiliateDashboard = async (req, res) => {
     const affiliate = await Affiliate.findOne({
       user: userId,
     });
-    console.log("[getAffiliateDashboard] Affiliate lookup result:", affiliate?._id || null);
+    // console.log("[getAffiliateDashboard] Affiliate lookup result:", affiliate?._id || null);
 
     if (!affiliate) {
       console.warn("[getAffiliateDashboard] User is not an affiliate member:", userId);
@@ -1478,11 +1478,11 @@ export const getAffiliateDashboard = async (req, res) => {
 
     const linkSkip = (linkPage - 1) * linkLimit;
 
-    console.log("[getAffiliateDashboard] Pagination calculated:", {
-      linkPage,
-      linkLimit,
-      linkSkip,
-    });
+    // console.log("[getAffiliateDashboard] Pagination calculated:", {
+    //   linkPage,
+    //   linkLimit,
+    //   linkSkip,
+    // });
 
     // ==========================================
     // START OF CURRENT MONTH
@@ -1491,13 +1491,13 @@ export const getAffiliateDashboard = async (req, res) => {
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
-    console.log("[getAffiliateDashboard] startOfMonth:", startOfMonth.toISOString());
+    // console.log("[getAffiliateDashboard] startOfMonth:", startOfMonth.toISOString());
 
     // ==========================================
     // FETCH LINKS + COUNT + REFERRALS + EARNINGS
     // ==========================================
 
-    console.log("[getAffiliateDashboard] Running parallel queries for affiliate:", affiliate._id);
+    // console.log("[getAffiliateDashboard] Running parallel queries for affiliate:", affiliate._id);
     const [
       links,
       totalLinks,
@@ -1546,12 +1546,12 @@ export const getAffiliateDashboard = async (req, res) => {
       ]),
     ]);
 
-    console.log("[getAffiliateDashboard] Parallel query counts:", {
-      fetchedLinksCount: links.length,
-      totalLinks,
-      totalReferralsDocs: referrals.length,
-      monthlyEarningsAgg: monthlyEarnings,
-    });
+    // console.log("[getAffiliateDashboard] Parallel query counts:", {
+    //   fetchedLinksCount: links.length,
+    //   totalLinks,
+    //   totalReferralsDocs: referrals.length,
+    //   monthlyEarningsAgg: monthlyEarnings,
+    // });
 
     // ==========================================
     // TOTAL PAGES
@@ -1571,7 +1571,7 @@ export const getAffiliateDashboard = async (req, res) => {
         affiliate: affiliate._id,
         status: 'active',
       });
-    console.log("[getAffiliateDashboard] activeLinks count:", activeLinks);
+    // console.log("[getAffiliateDashboard] activeLinks count:", activeLinks);
 
     // ==========================================
     // RECENT REFERRALS
@@ -1585,7 +1585,7 @@ export const getAffiliateDashboard = async (req, res) => {
         .limit(10)
         .populate('referredUser', 'name email')
         .lean();
-    console.log("[getAffiliateDashboard] recentReferrals count:", recentReferrals.length);
+    // console.log("[getAffiliateDashboard] recentReferrals count:", recentReferrals.length);
 
     // ==========================================
     // SAFE NUMBERS
@@ -1664,9 +1664,9 @@ export const getAffiliateDashboard = async (req, res) => {
     // DEBUG
     // ==========================================
 
-    console.log("[getAffiliateDashboard] Stats payload:", data.stats);
-    console.log("[getAffiliateDashboard] Pagination payload:", data.linkPagination);
-    console.log("[getAffiliateDashboard] Links returned:", data.links.length);
+    // console.log("[getAffiliateDashboard] Stats payload:", data.stats);
+    // console.log("[getAffiliateDashboard] Pagination payload:", data.linkPagination);
+    // console.log("[getAffiliateDashboard] Links returned:", data.links.length);
 
     // ==========================================
     // RESPONSE
@@ -1693,14 +1693,14 @@ export const getAffiliateDashboard = async (req, res) => {
 
 export const joinAffiliateProgram = async (req, res) => {
   try {
-    console.log("[joinAffiliateProgram] Request received");
-    console.log("[joinAffiliateProgram] req.user:", req.user);
+    // console.log("[joinAffiliateProgram] Request received");
+    // console.log("[joinAffiliateProgram] req.user:", req.user);
 
     const userId = req.user?._id;
-    console.log("[joinAffiliateProgram] userId:", userId);
+    // console.log("[joinAffiliateProgram] userId:", userId);
 
     if (!userId) {
-      console.log("[joinAffiliateProgram] Missing userId on req.user");
+      // console.log("[joinAffiliateProgram] Missing userId on req.user");
       return res.status(401).json({
         success: false,
         message: "Unauthorized: user ID missing",
@@ -1708,10 +1708,10 @@ export const joinAffiliateProgram = async (req, res) => {
     }
 
     const existing = await Affiliate.findOne({ user: userId });
-    console.log("[joinAffiliateProgram] Existing affiliate check:", existing);
+    // console.log("[joinAffiliateProgram] Existing affiliate check:", existing);
 
     if (existing) {
-      console.log("[joinAffiliateProgram] User is already an affiliate:", existing._id);
+      // console.log("[joinAffiliateProgram] User is already an affiliate:", existing._id);
       return res.status(400).json({
         success: false,
         message: "Already an affiliate member",
@@ -1719,7 +1719,7 @@ export const joinAffiliateProgram = async (req, res) => {
     }
 
     const affiliateCode = "REF" + Math.random().toString(36).substring(2, 8).toUpperCase();
-    console.log("[joinAffiliateProgram] Generated affiliateCode:", affiliateCode);
+    // console.log("[joinAffiliateProgram] Generated affiliateCode:", affiliateCode);
 
     const affiliate = await Affiliate.create({
       user: userId,
@@ -1727,7 +1727,7 @@ export const joinAffiliateProgram = async (req, res) => {
       status: "active",
       commissionRate: 10,
     });
-    console.log("[joinAffiliateProgram] Created affiliate:", affiliate);
+    // console.log("[joinAffiliateProgram] Created affiliate:", affiliate);
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -1737,7 +1737,7 @@ export const joinAffiliateProgram = async (req, res) => {
       },
       { new: true }
     );
-    console.log("[joinAffiliateProgram] Updated user:", updatedUser);
+    // console.log("[joinAffiliateProgram] Updated user:", updatedUser);
 
     res.status(201).json({
       success: true,

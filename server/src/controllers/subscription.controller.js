@@ -36,13 +36,13 @@ export const createOrder = async (req, res) => {
     const planKey = req.body.planName || req.body.plan;
     const plan = PLANS[planKey];
 
-    console.log(`🚀 [${traceId}][createOrder] START`, {
-      userId,
-      rawBody: req.body,
-      planKey,
-      planFound: !!plan,
-      planDetails: plan ? { id: plan.id, price: plan.price, isFree: plan.isFree } : null,
-    });
+    // console.log(`🚀 [${traceId}][createOrder] START`, {
+    //   userId,
+    //   rawBody: req.body,
+    //   planKey,
+    //   planFound: !!plan,
+    //   planDetails: plan ? { id: plan.id, price: plan.price, isFree: plan.isFree } : null,
+    // });
 
     if (!userId) {
       console.error(`❌ [${traceId}][createOrder] Missing req.user id:`, req.user);
@@ -71,13 +71,13 @@ export const createOrder = async (req, res) => {
       (!business.subscriptionEndDate ||
         new Date(business.subscriptionEndDate) > new Date());
 
-    console.log(`ℹ️ [${traceId}][createOrder] Business state:`, {
-      businessId: business._id,
-      currentPlan,
-      subscriptionStatus: business.subscriptionStatus,
-      subscriptionEndDate: business.subscriptionEndDate,
-      isCurrentlyActive,
-    });
+    // console.log(`ℹ️ [${traceId}][createOrder] Business state:`, {
+    //   businessId: business._id,
+    //   currentPlan,
+    //   subscriptionStatus: business.subscriptionStatus,
+    //   subscriptionEndDate: business.subscriptionEndDate,
+    //   isCurrentlyActive,
+    // });
 
     if (currentPlan === plan.id && isCurrentlyActive) {
       console.warn(`⚠️ [${traceId}][createOrder] Duplicate active plan blocked:`, plan.id);
@@ -98,15 +98,15 @@ export const createOrder = async (req, res) => {
       },
     };
 
-    console.log(`📡 [${traceId}][createOrder] Creating Razorpay order with payload:`, orderPayload);
+    // console.log(`📡 [${traceId}][createOrder] Creating Razorpay order with payload:`, orderPayload);
     const order = await razorpay.orders.create(orderPayload);
 
-    console.log(`✅ [${traceId}][createOrder] SUCCESS:`, {
-      orderId: order.id,
-      amount: order.amount,
-      currency: order.currency,
-      keyIdPresent: !!process.env.RAZORPAY_KEY_ID,
-    });
+    // console.log(`✅ [${traceId}][createOrder] SUCCESS:`, {
+    //   orderId: order.id,
+    //   amount: order.amount,
+    //   currency: order.currency,
+    //   keyIdPresent: !!process.env.RAZORPAY_KEY_ID,
+    // });
 
     res.status(200).json({
       success: true,
@@ -139,14 +139,14 @@ export const verifyPayment = async (req, res) => {
     const selectedPlan = PLANS[planKey];
     const userId = req.user?.id || req.user?._id;
 
-    console.log(`🚀 [${traceId}][verifyPayment] START`, {
-      userId,
-      orderId,
-      paymentId,
-      signatureReceived: signature ? `${signature.slice(0, 10)}...` : null,
-      planKey,
-      selectedPlanFound: !!selectedPlan,
-    });
+    // console.log(`🚀 [${traceId}][verifyPayment] START`, {
+    //   userId,
+    //   orderId,
+    //   paymentId,
+    //   signatureReceived: signature ? `${signature.slice(0, 10)}...` : null,
+    //   planKey,
+    //   selectedPlanFound: !!selectedPlan,
+    // });
 
     if (!orderId || !paymentId || !signature || !selectedPlan) {
       console.warn(`⚠️ [${traceId}][verifyPayment] Missing required fields:`, {
@@ -181,17 +181,17 @@ export const verifyPayment = async (req, res) => {
         message: "Payment verification failed. Invalid signature.",
       });
     }
-    console.log(`🔐 [${traceId}][verifyPayment] Signature verified`);
+    // console.log(`🔐 [${traceId}][verifyPayment] Signature verified`);
 
     const razorpayOrder = await razorpay.orders.fetch(orderId);
     const expectedAmount = Math.round(selectedPlan.price * 100);
-    console.log(`📡 [${traceId}][verifyPayment] Fetched Razorpay order:`, {
-      orderId: razorpayOrder.id,
-      status: razorpayOrder.status,
-      orderAmount: razorpayOrder.amount,
-      expectedAmount,
-      notes: razorpayOrder.notes,
-    });
+    // console.log(`📡 [${traceId}][verifyPayment] Fetched Razorpay order:`, {
+    //   orderId: razorpayOrder.id,
+    //   status: razorpayOrder.status,
+    //   orderAmount: razorpayOrder.amount,
+    //   expectedAmount,
+    //   notes: razorpayOrder.notes,
+    // });
 
     if (Number(razorpayOrder.amount) !== expectedAmount) {
       console.warn(`⚠️ [${traceId}][verifyPayment] Amount mismatch:`, {
@@ -229,14 +229,14 @@ export const verifyPayment = async (req, res) => {
     business.subscriptionEndDate = endDate;
     await business.save();
 
-    console.log(`💾 [${traceId}][verifyPayment] Business updated:`, {
-      businessId: business._id,
-      previousPlan,
-      newPlan: selectedPlan.id,
-      transactionType,
-      startDate,
-      endDate,
-    });
+    // console.log(`💾 [${traceId}][verifyPayment] Business updated:`, {
+    //   businessId: business._id,
+    //   previousPlan,
+    //   newPlan: selectedPlan.id,
+    //   transactionType,
+    //   startDate,
+    //   endDate,
+    // });
 
     const subRecord = await Subscription.findOneAndUpdate(
       { businessId: business._id },
@@ -255,10 +255,10 @@ export const verifyPayment = async (req, res) => {
       },
       { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
     );
-    console.log(`💾 [${traceId}][verifyPayment] Subscription upserted:`, {
-      subscriptionId: subRecord?._id,
-      plan: subRecord?.plan,
-    });
+    // console.log(`💾 [${traceId}][verifyPayment] Subscription upserted:`, {
+    //   subscriptionId: subRecord?._id,
+    //   plan: subRecord?.plan,
+    // });
 
     // ============================================================
     // AFFILIATE COMMISSION TRACKING
@@ -272,22 +272,22 @@ export const verifyPayment = async (req, res) => {
     };
 
     try {
-      console.log(`🤝 [${traceId}][verifyPayment:affiliate] Searching referral for userId:`, userId);
+      // console.log(`🤝 [${traceId}][verifyPayment:affiliate] Searching referral for userId:`, userId);
 
       const referral = await AffiliateReferral.findOne({
         referredUser: userId,
       }).sort({ createdAt: -1 });
 
       if (!referral) {
-        console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] No referral doc found for referredUser:`, userId);
+        // console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] No referral doc found for referredUser:`, userId);
       } else {
-        console.log(`🔍 [${traceId}][verifyPayment:affiliate] Referral doc found:`, {
-          referralId: referral._id,
-          affiliateId: referral.affiliate,
-          status: referral.status,
-          lastPaymentId: referral.lastPaymentId,
-          commissionCount: referral.commissionCount || 0,
-        });
+        // console.log(`🔍 [${traceId}][verifyPayment:affiliate] Referral doc found:`, {
+        //   referralId: referral._id,
+        //   affiliateId: referral.affiliate,
+        //   status: referral.status,
+        //   lastPaymentId: referral.lastPaymentId,
+        //   commissionCount: referral.commissionCount || 0,
+        // });
 
         const affiliate = await Affiliate.findById(referral.affiliate);
 
@@ -306,22 +306,22 @@ export const verifyPayment = async (req, res) => {
           const alreadyCreditedForPayment = referral.lastPaymentId === paymentId;
 
           if (alreadyCreditedForPayment) {
-            console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] Duplicate paymentId skipped:`, paymentId);
+            // console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] Duplicate paymentId skipped:`, paymentId);
             affiliateData.message = "Affiliate commission already credited";
           } else {
             const alreadyHadCommission = Number(referral.commissionCount || 0) > 0;
             const shouldPayCommission =
               commissionType === "recurring" ? true : !alreadyHadCommission;
 
-            console.log(`🧮 [${traceId}][verifyPayment:affiliate] Eligibility check:`, {
-              commissionType,
-              commissionRate,
-              alreadyHadCommission,
-              shouldPayCommission,
-            });
+            // console.log(`🧮 [${traceId}][verifyPayment:affiliate] Eligibility check:`, {
+            //   commissionType,
+            //   commissionRate,
+            //   alreadyHadCommission,
+            //   shouldPayCommission,
+            // });
 
             if (!shouldPayCommission) {
-              console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] One-time commission already paid earlier`);
+              // console.log(`ℹ️ [${traceId}][verifyPayment:affiliate] One-time commission already paid earlier`);
               affiliateData = {
                 earned: false,
                 commission: 0,
@@ -337,12 +337,12 @@ export const verifyPayment = async (req, res) => {
                 ((planAmount * commissionRate) / 100).toFixed(2)
               );
 
-              console.log(`💰 [${traceId}][verifyPayment:affiliate] Crediting commission:`, {
-                plan: selectedPlan.id,
-                planAmount,
-                commissionRate,
-                commissionAmount,
-              });
+              // console.log(`💰 [${traceId}][verifyPayment:affiliate] Crediting commission:`, {
+              //   plan: selectedPlan.id,
+              //   planAmount,
+              //   commissionRate,
+              //   commissionAmount,
+              // });
 
               referral.status = "subscribed";
               referral.subscriptionPlan = selectedPlan.id;
@@ -360,7 +360,7 @@ export const verifyPayment = async (req, res) => {
                 referral.convertedAt = new Date();
               }
               await referral.save();
-              console.log(`💾 [${traceId}][verifyPayment:affiliate] Referral saved:`, referral._id);
+              // console.log(`💾 [${traceId}][verifyPayment:affiliate] Referral saved:`, referral._id);
 
               affiliate.totalEarnings =
                 Number(affiliate.totalEarnings || 0) + commissionAmount;
@@ -392,11 +392,11 @@ export const verifyPayment = async (req, res) => {
               }
 
               await affiliate.save();
-              console.log(`💾 [${traceId}][verifyPayment:affiliate] Affiliate saved:`, {
-                affiliateId: affiliate._id,
-                totalEarnings: affiliate.totalEarnings,
-                totalConversions: affiliate.totalConversions,
-              });
+              // console.log(`💾 [${traceId}][verifyPayment:affiliate] Affiliate saved:`, {
+              //   affiliateId: affiliate._id,
+              //   totalEarnings: affiliate.totalEarnings,
+              //   totalConversions: affiliate.totalConversions,
+              // });
 
               affiliateData = {
                 earned: true,
@@ -429,7 +429,7 @@ export const verifyPayment = async (req, res) => {
       };
     }
 
-    console.log(`✅ [${traceId}][verifyPayment] COMPLETE`);
+    // console.log(`✅ [${traceId}][verifyPayment] COMPLETE`);
     res.status(200).json({
       success: true,
       message: "Payment verified and plan activated",
@@ -462,7 +462,7 @@ export const getSubscriptionStatus = async (req, res) => {
   const traceId = `sts_${Date.now()}`;
   try {
     const userId = req.user?.id || req.user?._id;
-    console.log(`🚀 [${traceId}][getSubscriptionStatus] START for userId:`, userId);
+    // console.log(`🚀 [${traceId}][getSubscriptionStatus] START for userId:`, userId);
 
     const business = await Business.findOne({ ownerId: userId });
     if (!business) {
@@ -473,13 +473,13 @@ export const getSubscriptionStatus = async (req, res) => {
     let currentPlan = business.subscriptionPlan || "free";
     let currentStatus = business.subscriptionStatus || "active";
 
-    console.log(`ℹ️ [${traceId}][getSubscriptionStatus] Current DB values:`, {
-      businessId: business._id,
-      currentPlan,
-      currentStatus,
-      subscriptionEndDate: business.subscriptionEndDate,
-      now: new Date(),
-    });
+    // console.log(`ℹ️ [${traceId}][getSubscriptionStatus] Current DB values:`, {
+    //   businessId: business._id,
+    //   currentPlan,
+    //   currentStatus,
+    //   subscriptionEndDate: business.subscriptionEndDate,
+    //   now: new Date(),
+    // });
 
     // Auto-expire paid plan if endDate is in the past
     if (
@@ -488,11 +488,11 @@ export const getSubscriptionStatus = async (req, res) => {
       business.subscriptionEndDate &&
       new Date(business.subscriptionEndDate) <= new Date()
     ) {
-      console.log(`⏳ [${traceId}][getSubscriptionStatus] Expiring plan to free:`, {
-        businessId: business._id,
-        expiredPlan: currentPlan,
-        endDate: business.subscriptionEndDate,
-      });
+      // console.log(`⏳ [${traceId}][getSubscriptionStatus] Expiring plan to free:`, {
+      //   businessId: business._id,
+      //   expiredPlan: currentPlan,
+      //   endDate: business.subscriptionEndDate,
+      // });
 
       currentPlan = "free";
       currentStatus = "active";
@@ -504,7 +504,7 @@ export const getSubscriptionStatus = async (req, res) => {
         { businessId: business._id },
         { $set: { plan: "free", status: "active", price: 0 } }
       );
-      console.log(`💾 [${traceId}][getSubscriptionStatus] Reverted to free in Business & Subscription`);
+      // console.log(`💾 [${traceId}][getSubscriptionStatus] Reverted to free in Business & Subscription`);
     }
 
     const planObj = getPlanById(currentPlan);

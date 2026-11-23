@@ -9,11 +9,11 @@ export const registerUser = createAsyncThunk(
   async ({ name, email, password, ref = "" }, { rejectWithValue }) => {
     try {
       const affiliateRef = ref || localStorage.getItem("affiliateRef") || "";
-      console.log("[authSlice:registerUser] Sending POST /auth/register:", {
-        name,
-        email,
-        ref: affiliateRef,
-      });
+      // console.log("[authSlice:registerUser] Sending POST /auth/register:", {
+      //   name,
+      //   email,
+      //   ref: affiliateRef,
+      // });
 
       const { data } = await api.post("/auth/register", {
         name,
@@ -21,11 +21,11 @@ export const registerUser = createAsyncThunk(
         password,
         ref: affiliateRef,
       });
-      console.log("[authSlice:registerUser] Response received:", data);
+      // console.log("[authSlice:registerUser] Response received:", data);
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        console.log("[authSlice:registerUser] Token saved to localStorage");
+        // console.log("[authSlice:registerUser] Token saved to localStorage");
       } else {
         console.warn("[authSlice:registerUser] No token in response data");
       }
@@ -46,21 +46,21 @@ export const loginUser = createAsyncThunk(
   async ({ email, password, ref = "" }, { rejectWithValue }) => {
     try {
       const affiliateRef = ref || localStorage.getItem("affiliateRef") || "";
-      console.log("[authSlice:loginUser] Sending POST /auth/login:", {
-        email,
-        ref: affiliateRef,
-      });
+      // console.log("[authSlice:loginUser] Sending POST /auth/login:", {
+      //   email,
+      //   ref: affiliateRef,
+      // });
 
       const { data } = await api.post("/auth/login", {
         email,
         password,
         ref: affiliateRef,
       });
-      console.log("[authSlice:loginUser] Response received:", data);
+      // console.log("[authSlice:loginUser] Response received:", data);
 
       if (data.token) {
         localStorage.setItem("token", data.token);
-        console.log("[authSlice:loginUser] Token saved to localStorage");
+        // console.log("[authSlice:loginUser] Token saved to localStorage");
       } else {
         console.warn("[authSlice:loginUser] No token in response data");
       }
@@ -78,9 +78,9 @@ export const fetchMe = createAsyncThunk(
   "auth/fetchMe",
   async (_, { rejectWithValue }) => {
     try {
-      console.log("[authSlice:fetchMe] Sending GET /auth/me");
+      // console.log("[authSlice:fetchMe] Sending GET /auth/me");
       const { data } = await api.get("/auth/me");
-      console.log("[authSlice:fetchMe] Response received:", data);
+      // console.log("[authSlice:fetchMe] Response received:", data);
       return data.user || data;
     } catch (err) {
       console.warn("[authSlice:fetchMe] Failed -> clearing token:", err.response?.data || err.message);
@@ -105,7 +105,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     logout: (state) => {
-      console.log("[authSlice:logout] Clearing token, affiliateRef, and auth state");
+      // console.log("[authSlice:logout] Clearing token, affiliateRef, and auth state");
       localStorage.removeItem("token");
       localStorage.removeItem("affiliateRef");
       state.user = null;
@@ -113,7 +113,7 @@ const authSlice = createSlice({
       state.error = null;
     },
     clearError: (state) => {
-      console.log("[authSlice:clearError] Clearing auth error");
+      // console.log("[authSlice:clearError] Clearing auth error");
       state.error = null;
     },
   },
@@ -123,14 +123,14 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
         state.error = null;
-        console.log("[authSlice] registerUser.pending");
+        // console.log("[authSlice] registerUser.pending");
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload?.user || action.payload;
         state.token = action.payload?.token || localStorage.getItem("token");
         state.initialized = true;
-        console.log("[authSlice] registerUser.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
+        // console.log("[authSlice] registerUser.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
@@ -142,14 +142,14 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
-        console.log("[authSlice] loginUser.pending");
+        // console.log("[authSlice] loginUser.pending");
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload?.user || action.payload;
         state.token = action.payload?.token || localStorage.getItem("token");
         state.initialized = true;
-        console.log("[authSlice] loginUser.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
+        // console.log("[authSlice] loginUser.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
@@ -160,13 +160,13 @@ const authSlice = createSlice({
       // Fetch Me
       .addCase(fetchMe.pending, (state) => {
         state.loading = true;
-        console.log("[authSlice] fetchMe.pending");
+        // console.log("[authSlice] fetchMe.pending");
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload?.user || action.payload;
         state.initialized = true;
-        console.log("[authSlice] fetchMe.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
+        // console.log("[authSlice] fetchMe.fulfilled -> user:", state.user?._id || state.user?.id || state.user);
       })
       .addCase(fetchMe.rejected, (state, action) => {
         state.loading = false;

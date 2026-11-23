@@ -102,19 +102,19 @@ const AffiliateReferrals = ({
     ? initialItems
     : EMPTY_ARRAY;
 
-  console.log("[AffiliateReferrals][track items]", {
-    type,
-    listKey,
-    isReferral,
-    isServerPaginated,
-    isServerPaginatedProp,
-    fetchUrl,
-    source: isServerPaginated ? "redux.listData[listKey].items" : "initialItems/referrals prop",
-    itemsCount: items.length,
-    bucketItemsCount: bucket.items?.length ?? 0,
-    initialItemsCount: initialItems.length,
-    items,
-  });
+  // console.log("[AffiliateReferrals][track items]", {
+  //   type,
+  //   listKey,
+  //   isReferral,
+  //   isServerPaginated,
+  //   isServerPaginatedProp,
+  //   fetchUrl,
+  //   source: isServerPaginated ? "redux.listData[listKey].items" : "initialItems/referrals prop",
+  //   itemsCount: items.length,
+  //   bucketItemsCount: bucket.items?.length ?? 0,
+  //   initialItemsCount: initialItems.length,
+  //   items,
+  // });
 
   const pagination = bucket.pagination;
   const statusFilter = bucket.statusFilter;
@@ -125,7 +125,7 @@ const AffiliateReferrals = ({
 
   useEffect(() => {
     if (isServerPaginated) {
-      console.log("[AffiliateReferrals][sync effect] skipped because isServerPaginated = true");
+      // console.log("[AffiliateReferrals][sync effect] skipped because isServerPaginated = true");
       return;
     }
 
@@ -137,19 +137,19 @@ const AffiliateReferrals = ({
     const isSameEmpty = nextItems.length === 0 && prevItems.length === 0;
     const isSameRef = prevInitialRef.current === initialItems;
 
-    console.log("[AffiliateReferrals][sync effect]", {
-      listKey,
-      nextCount: nextItems.length,
-      prevCount: prevItems.length,
-      isSameRef,
-      isSameEmpty,
-    });
+    // console.log("[AffiliateReferrals][sync effect]", {
+    //   listKey,
+    //   nextCount: nextItems.length,
+    //   prevCount: prevItems.length,
+    //   isSameRef,
+    //   isSameEmpty,
+    // });
 
     if (!isSameRef && !isSameEmpty) {
-      console.log("[AffiliateReferrals][sync effect] dispatching setListItems", {
-        type: listKey,
-        count: nextItems.length,
-      });
+      // console.log("[AffiliateReferrals][sync effect] dispatching setListItems", {
+      //   type: listKey,
+      //   count: nextItems.length,
+      // });
       dispatch(setListItems({ type: listKey, items: nextItems }));
     }
 
@@ -169,13 +169,13 @@ const AffiliateReferrals = ({
         return;
       }
 
-      console.log("[AffiliateReferrals][fetchData] dispatching fetchPaginatedAffiliateList", {
-        fetchUrl,
-        type: listKey,
-        page,
-        limit,
-        status,
-      });
+      // console.log("[AffiliateReferrals][fetchData] dispatching fetchPaginatedAffiliateList", {
+      //   fetchUrl,
+      //   type: listKey,
+      //   page,
+      //   limit,
+      //   status,
+      // });
 
       dispatch(
         fetchPaginatedAffiliateList({
@@ -192,7 +192,7 @@ const AffiliateReferrals = ({
 
   useEffect(() => {
     if (isServerPaginated) {
-      console.log("[AffiliateReferrals][initial fetch effect] calling fetchData(1, 5, '')");
+      // console.log("[AffiliateReferrals][initial fetch effect] calling fetchData(1, 5, '')");
       fetchData(1, 5, "");
     }
   }, [isServerPaginated, fetchData]);
@@ -450,7 +450,7 @@ const AffiliateReferrals = ({
                 const amount = formatAmount(item.amount);
                 const commission = Number(item.commission ?? 0);
 
-                console.log("[AffiliateReferrals][render item]", {
+                {/* console.log("[AffiliateReferrals][render item]", {
                   index,
                   id: item._id,
                   type,
@@ -460,7 +460,7 @@ const AffiliateReferrals = ({
                   status: item.status,
                   createdAt: item.createdAt,
                   item,
-                });
+                }); */}
 
                 return (
                   <div

@@ -10,9 +10,9 @@ export const fetchWithdrawals = createAsyncThunk(
   "withdrawals/fetchAll",
   async (params = {}, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:fetchWithdrawals] params:", params);
+      // console.log("[withdrawalSlice:fetchWithdrawals] params:", params);
       const response = await api.get("/admin/withdrawals", { params });
-      console.log("[withdrawalSlice:fetchWithdrawals] response:", response.data);
+      // console.log("[withdrawalSlice:fetchWithdrawals] response:", response.data);
       return response.data;
     } catch (error) {
       console.error(
@@ -33,9 +33,9 @@ export const fetchWithdrawalById = createAsyncThunk(
   "withdrawals/fetchById",
   async (id, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:fetchWithdrawalById] id:", id);
+      // console.log("[withdrawalSlice:fetchWithdrawalById] id:", id);
       const response = await api.get(`/admin/withdrawals/${id}`);
-      console.log("[withdrawalSlice:fetchWithdrawalById] response:", response.data);
+      // console.log("[withdrawalSlice:fetchWithdrawalById] response:", response.data);
       return response.data;
     } catch (error) {
       console.error(
@@ -56,11 +56,11 @@ export const approveWithdrawal = createAsyncThunk(
   "withdrawals/approve",
   async ({ id, notes }, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:approveWithdrawal] payload:", { id, notes });
+      // console.log("[withdrawalSlice:approveWithdrawal] payload:", { id, notes });
       const response = await api.patch(`/admin/withdrawals/${id}/approve`, {
         notes,
       });
-      console.log("[withdrawalSlice:approveWithdrawal] response:", response.data);
+      // console.log("[withdrawalSlice:approveWithdrawal] response:", response.data);
       return { id, data: response.data };
     } catch (error) {
       console.error(
@@ -81,16 +81,16 @@ export const completeWithdrawal = createAsyncThunk(
   "withdrawals/complete",
   async ({ id, transactionId, notes }, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:completeWithdrawal] payload:", {
-        id,
-        transactionId,
-        notes,
-      });
+      // console.log("[withdrawalSlice:completeWithdrawal] payload:", {
+      //   id,
+      //   transactionId,
+      //   notes,
+      // });
       const response = await api.patch(`/admin/withdrawals/${id}/complete`, {
         transactionId,
         notes,
       });
-      console.log("[withdrawalSlice:completeWithdrawal] response:", response.data);
+      // console.log("[withdrawalSlice:completeWithdrawal] response:", response.data);
       return { id, data: response.data };
     } catch (error) {
       console.error(
@@ -111,11 +111,11 @@ export const rejectWithdrawal = createAsyncThunk(
   "withdrawals/reject",
   async ({ id, notes }, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:rejectWithdrawal] payload:", { id, notes });
+      // console.log("[withdrawalSlice:rejectWithdrawal] payload:", { id, notes });
       const response = await api.patch(`/admin/withdrawals/${id}/reject`, {
         notes,
       });
-      console.log("[withdrawalSlice:rejectWithdrawal] response:", response.data);
+      // console.log("[withdrawalSlice:rejectWithdrawal] response:", response.data);
       return { id, data: response.data };
     } catch (error) {
       console.error(
@@ -136,9 +136,9 @@ export const cancelWithdrawal = createAsyncThunk(
   "withdrawals/cancel",
   async (id, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:cancelWithdrawal] id:", id);
+      // console.log("[withdrawalSlice:cancelWithdrawal] id:", id);
       const response = await api.patch(`/admin/withdrawals/${id}/cancel`);
-      console.log("[withdrawalSlice:cancelWithdrawal] response:", response.data);
+      // console.log("[withdrawalSlice:cancelWithdrawal] response:", response.data);
       return { id, data: response.data };
     } catch (error) {
       console.error(
@@ -159,20 +159,20 @@ export const bulkProcessWithdrawals = createAsyncThunk(
   "withdrawals/bulkProcess",
   async ({ withdrawalIds, status, notes }, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:bulkProcessWithdrawals] payload:", {
-        withdrawalIds,
-        status,
-        notes,
-      });
+      // console.log("[withdrawalSlice:bulkProcessWithdrawals] payload:", {
+      //   withdrawalIds,
+      //   status,
+      //   notes,
+      // });
       const response = await api.post("/admin/withdrawals/bulk-process", {
         withdrawalIds,
         status,
         notes,
       });
-      console.log(
-        "[withdrawalSlice:bulkProcessWithdrawals] response:",
-        response.data
-      );
+      // console.log(
+      //   "[withdrawalSlice:bulkProcessWithdrawals] response:",
+      //   response.data
+      // );
       return response.data;
     } catch (error) {
       console.error(
@@ -193,12 +193,12 @@ export const fetchWithdrawalStats = createAsyncThunk(
   "withdrawals/fetchStats",
   async (params = {}, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:fetchWithdrawalStats] params:", params);
+      // console.log("[withdrawalSlice:fetchWithdrawalStats] params:", params);
       const response = await api.get("/admin/withdrawals/stats", { params });
-      console.log(
-        "[withdrawalSlice:fetchWithdrawalStats] response:",
-        response.data
-      );
+      // console.log(
+      //   "[withdrawalSlice:fetchWithdrawalStats] response:",
+      //   response.data
+      // );
       return response.data?.data || response.data;
     } catch (error) {
       console.error(
@@ -219,15 +219,15 @@ export const exportWithdrawals = createAsyncThunk(
   "withdrawals/export",
   async (params = {}, { rejectWithValue }) => {
     try {
-      console.log("[withdrawalSlice:exportWithdrawals] params:", params);
+      // console.log("[withdrawalSlice:exportWithdrawals] params:", params);
       const response = await api.get("/admin/withdrawals/export", {
         params,
         responseType: "blob",
       });
-      console.log("[withdrawalSlice:exportWithdrawals] blob received:", {
-        size: response.data?.size,
-        type: response.data?.type,
-      });
+      // console.log("[withdrawalSlice:exportWithdrawals] blob received:", {
+      //   size: response.data?.size,
+      //   type: response.data?.type,
+      // });
       return response.data;
     } catch (error) {
       console.error(

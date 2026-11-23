@@ -16,7 +16,7 @@ const router = express.Router();
 router.post(
   "/generate",
   (req, res, next) => {
-    console.log("\n📥 [Route Hit] POST /api/slots/generate | Body:", req.body);
+    // console.log("\n📥 [Route Hit] POST /api/slots/generate | Body:", req.body);
     next();
   },
   protect,

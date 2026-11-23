@@ -90,7 +90,7 @@ export const getAvailableDates = async (req, res) => {
       filter.doctorId = new mongoose.Types.ObjectId(doctorId);
     }
 
-    console.log(`📡 [API] Fetching dates for Doctor: ${doctorId || "Any"}`);
+    // console.log(`📡 [API] Fetching dates for Doctor: ${doctorId || "Any"}`);
 
     const result = await Slot.aggregate([
       { $match: filter },
@@ -99,7 +99,7 @@ export const getAvailableDates = async (req, res) => {
     ]);
 
     const dates = result.map((r) => ({ date: r._id, count: r.count }));
-    console.log(`✅ [API] Found ${dates.length} dates`);
+    // console.log(`✅ [API] Found ${dates.length} dates`);
 
     res.json(dates);
   } catch (error) {
@@ -131,13 +131,13 @@ export const getAvailableSlots = async (req, res) => {
       filter.doctorId = doctorId;
     }
 
-    console.log(`📡 [API] Fetching slots for Date: ${date}, Doctor: ${doctorId || 'Any'}`);
+    // console.log(`📡 [API] Fetching slots for Date: ${date}, Doctor: ${doctorId || 'Any'}`);
 
     const slots = await Slot.find(filter)
       .populate("doctorId", "name specialization")
       .sort({ startTime: 1 });
 
-    console.log(`✅ [API] Found ${slots.length} slots`);
+    // console.log(`✅ [API] Found ${slots.length} slots`);
     res.json(slots);
   } catch (error) {
     console.error("❌ [API] getAvailableSlots Error:", error);

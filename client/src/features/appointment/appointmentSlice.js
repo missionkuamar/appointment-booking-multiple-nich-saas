@@ -33,12 +33,12 @@ export const fetchStats = createAsyncThunk(
 export const updateAppointment = createAsyncThunk(
   "appointment/update",
   async ({ id, status, notes }, { rejectWithValue }) => {
-    console.log("[AppointmentSlice][updateAppointment] request:", {
-      url: `/appointments/${id}`,
-      id,
-      status,
-      notes,
-    });
+    // console.log("[AppointmentSlice][updateAppointment] request:", {
+    //   url: `/appointments/${id}`,
+    //   id,
+    //   status,
+    //   notes,
+    // });
 
     try {
       const { data } = await api.patch(`/appointments/${id}`, {
@@ -46,7 +46,7 @@ export const updateAppointment = createAsyncThunk(
         notes,
       });
 
-      console.log("[AppointmentSlice][updateAppointment] success response:", data);
+      // console.log("[AppointmentSlice][updateAppointment] success response:", data);
       return data;
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || "Failed";

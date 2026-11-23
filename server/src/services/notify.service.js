@@ -26,9 +26,9 @@ transporter.verify((error, success) => {
     console.error("Error Details:", error.message);
     console.error("===============================================================\n");
   } else {
-    console.log("\n✅ ================= SMTP CONNECTED ================= ✅");
-    console.log("Gmail server is ready to send emails!");
-    console.log("=====================================================\n");
+    // console.log("\n✅ ================= SMTP CONNECTED ================= ✅");
+    // console.log("Gmail server is ready to send emails!");
+    // console.log("=====================================================\n");
   }
 });
 
@@ -48,7 +48,7 @@ const updateNotificationStatus = async (appointmentId, field, status) => {
 // ─────────────────────────────────────────────
 export const sendOwnerNotification = async (business, appointment, ownerEmail) => {
   try {
-    console.log(`\n📡 [Email] Sending Owner Notification to: ${ownerEmail}...`);
+    // console.log(`\n📡 [Email] Sending Owner Notification to: ${ownerEmail}...`);
     
     const info = await transporter.sendMail({
       from: `"BookEasy" <${process.env.EMAIL_USER}>`,
@@ -70,7 +70,7 @@ export const sendOwnerNotification = async (business, appointment, ownerEmail) =
     });
 
     await updateNotificationStatus(appointment._id, "owner", "sent");
-    console.log(`✅ [Email] Owner Notification Sent! (ID: ${info.messageId})`);
+    // console.log(`✅ [Email] Owner Notification Sent! (ID: ${info.messageId})`);
   } catch (error) {
     await updateNotificationStatus(appointment._id, "owner", "failed");
     console.error(`❌ [Email] Owner Notification Failed! Reason: ${error.message}`);
@@ -82,12 +82,12 @@ export const sendOwnerNotification = async (business, appointment, ownerEmail) =
 // ─────────────────────────────────────────────
 export const sendClientNotification = async (business, appointment) => {
   if (!appointment.clientEmail) {
-    console.log("⏭️ [Email] Client email skipped (Email not provided by user)");
+    // console.log("⏭️ [Email] Client email skipped (Email not provided by user)");
     return;
   }
 
   try {
-    console.log(`📡 [Email] Sending Client Notification to: ${appointment.clientEmail}...`);
+    // console.log(`📡 [Email] Sending Client Notification to: ${appointment.clientEmail}...`);
     const manageLink = `${CLIENT_URL}/manage/${appointment.cancelToken}`;
 
     const info = await transporter.sendMail({
@@ -119,7 +119,7 @@ export const sendClientNotification = async (business, appointment) => {
     });
 
     await updateNotificationStatus(appointment._id, "client", "sent");
-    console.log(`✅ [Email] Client Notification Sent! (ID: ${info.messageId})`);
+    // console.log(`✅ [Email] Client Notification Sent! (ID: ${info.messageId})`);
   } catch (error) {
     await updateNotificationStatus(appointment._id, "client", "failed");
     console.error(`❌ [Email] Client Notification Failed! Reason: ${error.message}`);
@@ -133,7 +133,7 @@ export const sendRescheduleNotification = async (business, appointment) => {
   if (!appointment.clientEmail) return;
 
   try {
-    console.log(`📡 [Email] Sending Reschedule Notification to: ${appointment.clientEmail}...`);
+    // console.log(`📡 [Email] Sending Reschedule Notification to: ${appointment.clientEmail}...`);
     const manageLink = `${CLIENT_URL}/manage/${appointment.cancelToken}`;
 
     await transporter.sendMail({
@@ -156,7 +156,7 @@ export const sendRescheduleNotification = async (business, appointment) => {
         </div>
       `,
     });
-    console.log("✅ [Email] Reschedule Notification Sent!");
+    // console.log("✅ [Email] Reschedule Notification Sent!");
   } catch (error) {
     console.error(`❌ [Email] Reschedule Notification Failed! Reason: ${error.message}`);
   }
@@ -174,7 +174,7 @@ export const sendReminderEmail = async (business, appointment, flag) => {
   const manageLink = `${CLIENT_URL}/manage/${appointment.cancelToken}`;
 
   try {
-    console.log(`📡 [Email] Sending ${label} Reminder to: ${appointment.clientEmail}...`);
+    // console.log(`📡 [Email] Sending ${label} Reminder to: ${appointment.clientEmail}...`);
     
     await transporter.sendMail({
       from: `"${business.businessName}" <${process.env.EMAIL_USER}>`,
@@ -192,7 +192,7 @@ export const sendReminderEmail = async (business, appointment, flag) => {
         </div>
       `,
     });
-    console.log(`✅ [Email] Reminder (${label}) Sent!`);
+    // console.log(`✅ [Email] Reminder (${label}) Sent!`);
   } catch (error) {
     console.error(`❌ [Email] Reminder Failed! Reason: ${error.message}`);
     throw error; 
@@ -210,7 +210,7 @@ export const sendAppointmentUpdateNotification = async (
   previousStatus
 ) => {
   if (!appointment?.clientEmail) {
-    console.log("⏭️ [Email] Update email skipped (Client email not provided)");
+    // console.log("⏭️ [Email] Update email skipped (Client email not provided)");
     return;
   }
 
@@ -221,9 +221,9 @@ export const sendAppointmentUpdateNotification = async (
     : `${CLIENT_URL}/book/${business.slug}`;
 
   try {
-    console.log(
-      `📡 [Email] Sending Update Notification (${statusUpper}) to: ${appointment.clientEmail}...`
-    );
+    // console.log(
+    //   `📡 [Email] Sending Update Notification (${statusUpper}) to: ${appointment.clientEmail}...`
+    // );
 
     const info = await transporter.sendMail({
       from: `"${business.businessName}" <${process.env.EMAIL_USER}>`,
@@ -258,9 +258,9 @@ export const sendAppointmentUpdateNotification = async (
       `,
     });
 
-    console.log(
-      `✅ [Email] Update Notification (${statusUpper}) Sent! (ID: ${info.messageId})`
-    );
+    // console.log(
+    //   `✅ [Email] Update Notification (${statusUpper}) Sent! (ID: ${info.messageId})`
+    // );
   } catch (error) {
     console.error(
       `❌ [Email] Update Notification Failed! Reason: ${error.message}`

@@ -30,13 +30,13 @@ const PublicBooking = () => {
   // 1. Load business + doctors
   useEffect(() => {
     const load = async () => {
-      console.log("🚀 [PublicBooking] Fetching business for slug:", slug);
+      // console.log("🚀 [PublicBooking] Fetching business for slug:", slug);
       try {
         const biz = await api.get(`/public/${slug}`);
-        console.log("✅ [PublicBooking] Business Data:", biz.data);
+        // console.log("✅ [PublicBooking] Business Data:", biz.data);
         setBusiness(biz.data);
         setDoctors(biz.data.doctors || []);
-        console.log("🩺 [PublicBooking] Doctors loaded:", biz.data.doctors?.length || 0);
+        // console.log("🩺 [PublicBooking] Doctors loaded:", biz.data.doctors?.length || 0);
       } catch (err) {
         console.error("❌ [PublicBooking] Business load error:", err);
         toast.error("Business not found");
@@ -48,7 +48,7 @@ const PublicBooking = () => {
   // 2. Load dates when doctor selected (or "Any")
   useEffect(() => {
     if (!business) {
-      console.log("⏳ [PublicBooking] Waiting for business data before loading dates");
+      // console.log("⏳ [PublicBooking] Waiting for business data before loading dates");
       return;
     }
 
@@ -64,9 +64,9 @@ const PublicBooking = () => {
           params.doctorId = selectedDoctor._id;
         }
 
-        console.log("📡 [PublicBooking] Fetching dates with params:", params);
+        // console.log("📡 [PublicBooking] Fetching dates with params:", params);
         const res = await api.get(`/public/${slug}/dates`, { params });
-        console.log("✅ [PublicBooking] Raw Dates Response:", res.data);
+        // console.log("✅ [PublicBooking] Raw Dates Response:", res.data);
 
         const rawList = Array.isArray(res.data)
           ? res.data
@@ -77,21 +77,21 @@ const PublicBooking = () => {
             : { date: item.date || item._id, count: item.count ?? null }
         );
 
-        console.log("📅 [PublicBooking] Normalized Dates:", normalizedDates);
+        // console.log("📅 [PublicBooking] Normalized Dates:", normalizedDates);
         setDates(normalizedDates);
 
         if (normalizedDates.length > 0) {
-          console.log("🎯 [PublicBooking] Auto-selecting first date:", normalizedDates[0].date);
+          // console.log("🎯 [PublicBooking] Auto-selecting first date:", normalizedDates[0].date);
           setSelectedDate(normalizedDates[0].date);
         } else {
-          console.log("⚠️ [PublicBooking] No dates available");
+          // console.log("⚠️ [PublicBooking] No dates available");
         }
       } catch (err) {
         console.error("❌ [PublicBooking] Dates fetch error:", err.response?.data || err);
         setDates([]);
       } finally {
         setLoadingDates(false);
-        console.log("🏁 [PublicBooking] Finished loading dates");
+        // console.log("🏁 [PublicBooking] Finished loading dates");
       }
     };
     load();
@@ -100,7 +100,7 @@ const PublicBooking = () => {
   // 3. Load slots when date + doctor selected
   useEffect(() => {
     if (!selectedDate) {
-      console.log("⏳ [PublicBooking] No selectedDate yet, skipping slot fetch");
+      // console.log("⏳ [PublicBooking] No selectedDate yet, skipping slot fetch");
       return;
     }
 
@@ -112,14 +112,14 @@ const PublicBooking = () => {
           params.doctorId = selectedDoctor._id;
         }
 
-        console.log("📡 [PublicBooking] Fetching slots with params:", params);
+        // console.log("📡 [PublicBooking] Fetching slots with params:", params);
         const res = await api.get(`/public/${slug}/slots`, { params });
-        console.log("✅ [PublicBooking] Raw Slots Response:", res.data);
+        // console.log("✅ [PublicBooking] Raw Slots Response:", res.data);
 
         const slotList = Array.isArray(res.data)
           ? res.data
           : res.data?.slots || res.data?.data || [];
-        console.log("🕐 [PublicBooking] Slots count:", slotList.length);
+        // console.log("🕐 [PublicBooking] Slots count:", slotList.length);
         setSlots(slotList);
         setSelectedSlot(null);
       } catch (err) {
@@ -127,38 +127,38 @@ const PublicBooking = () => {
         setSlots([]);
       } finally {
         setLoadingSlots(false);
-        console.log("🏁 [PublicBooking] Finished loading slots");
+        // console.log("🏁 [PublicBooking] Finished loading slots");
       }
     };
     load();
   }, [selectedDate, selectedDoctor, slug]);
 
   const handleSelectDoctor = (doc) => {
-    console.log("🩺 [PublicBooking] Doctor selected:", doc ? { id: doc._id, name: doc.name } : "Any Available");
+    // console.log("🩺 [PublicBooking] Doctor selected:", doc ? { id: doc._id, name: doc.name } : "Any Available");
     setSelectedDoctor(doc);
   };
 
   const handleSelectDate = (date) => {
-    console.log("📅 [PublicBooking] Date selected:", date);
+    // console.log("📅 [PublicBooking] Date selected:", date);
     setSelectedDate(date);
   };
 
   const handleSelectSlot = (slot) => {
-    console.log("🕐 [PublicBooking] Slot selected:", { id: slot._id, startTime: slot.startTime });
+    // console.log("🕐 [PublicBooking] Slot selected:", { id: slot._id, startTime: slot.startTime });
     setSelectedSlot(slot);
   };
 
   const handleStepChange = (nextStep) => {
-    console.log("👣 [PublicBooking] Moving to step:", nextStep, {
-      selectedDate,
-      selectedSlotId: selectedSlot?._id,
-      selectedDoctorId: selectedDoctor?._id,
-    });
+    // console.log("👣 [PublicBooking] Moving to step:", nextStep, {
+    //   selectedDate,
+    //   selectedSlotId: selectedSlot?._id,
+    //   selectedDoctorId: selectedDoctor?._id,
+    // });
     setStep(nextStep);
   };
 
   const handleResetBooking = () => {
-    console.log("🔄 [PublicBooking] Resetting booking state for another appointment");
+    // console.log("🔄 [PublicBooking] Resetting booking state for another appointment");
     setSuccess(null);
     setStep(1);
     setSelectedSlot(null);
@@ -173,7 +173,7 @@ const PublicBooking = () => {
 
   const handleBook = async (e) => {
     e.preventDefault();
-    console.log("📝 [PublicBooking] handleBook triggered");
+    // console.log("📝 [PublicBooking] handleBook triggered");
 
     if (!selectedSlot) {
       console.warn("⚠️ [PublicBooking] Booking blocked: No slot selected");
@@ -189,10 +189,10 @@ const PublicBooking = () => {
         ...form,
         customData,
       };
-      console.log("📤 [PublicBooking] Booking payload:", payload);
+      // console.log("📤 [PublicBooking] Booking payload:", payload);
 
       const res = await api.post(`/public/${slug}/book`, payload);
-      console.log("🎉 [PublicBooking] Booking Success response:", res.data);
+      // console.log("🎉 [PublicBooking] Booking Success response:", res.data);
 
       const bookedData = res.data.appointment || res.data;
       const finalSuccessData = {
@@ -202,7 +202,7 @@ const PublicBooking = () => {
         clientName: bookedData.clientName || form.clientName,
         clientEmail: bookedData.clientEmail || form.clientEmail,
       };
-      console.log("📦 [PublicBooking] Setting success state:", finalSuccessData);
+      // console.log("📦 [PublicBooking] Setting success state:", finalSuccessData);
       setSuccess(finalSuccessData);
 
       toast.success("Thank you for booking! Please apna email check karein.");
@@ -211,7 +211,7 @@ const PublicBooking = () => {
       toast.error(err.response?.data?.message || "Booking failed");
     } finally {
       setLoading(false);
-      console.log("🏁 [PublicBooking] handleBook finished");
+      // console.log("🏁 [PublicBooking] handleBook finished");
     }
   };
 

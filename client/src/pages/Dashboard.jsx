@@ -48,33 +48,33 @@ const Dashboard = () => {
   const t = themes[theme] || themes.day;
   const activeToken = token || localStorage.getItem("token");
 
-  console.log("[Dashboard] Render snapshot:", {
-    hasUser: Boolean(user),
-    userRole: user?.role,
-    hasToken: Boolean(token),
-    hasLocalStorageToken: Boolean(localStorage.getItem("token")),
-    businessId: business?._id,
-    businessName: business?.businessName,
-    businessSlug: business?.slug,
-    subStatus,
-    statsLoading,
-    doctorsCount: Array.isArray(doctors) ? doctors.length : typeof doctors,
-    appointmentsCount: Array.isArray(appointments)
-      ? appointments.length
-      : typeof appointments,
-    chartRange,
-    theme,
-  });
+  // console.log("[Dashboard] Render snapshot:", {
+  //   hasUser: Boolean(user),
+  //   userRole: user?.role,
+  //   hasToken: Boolean(token),
+  //   hasLocalStorageToken: Boolean(localStorage.getItem("token")),
+  //   businessId: business?._id,
+  //   businessName: business?.businessName,
+  //   businessSlug: business?.slug,
+  //   subStatus,
+  //   statsLoading,
+  //   doctorsCount: Array.isArray(doctors) ? doctors.length : typeof doctors,
+  //   appointmentsCount: Array.isArray(appointments)
+  //     ? appointments.length
+  //     : typeof appointments,
+  //   chartRange,
+  //   theme,
+  // });
 
   // One-time reload guard when entering /dashboard after onboarding/register
   useEffect(() => {
     const reloadKey = "dashboard_once_after_entry";
     const alreadyReloaded = sessionStorage.getItem(reloadKey);
-    console.log("[Dashboard:reloadGuard] check:", {
-      alreadyReloaded,
-      activeToken: Boolean(activeToken),
-      businessSlug: business?.slug,
-    });
+    // console.log("[Dashboard:reloadGuard] check:", {
+    //   alreadyReloaded,
+    //   activeToken: Boolean(activeToken),
+    //   businessSlug: business?.slug,
+    // });
 
     if (!alreadyReloaded) {
       sessionStorage.setItem(reloadKey, "true");
@@ -84,16 +84,16 @@ const Dashboard = () => {
   }, [activeToken, business?.slug]);
 
   useEffect(() => {
-    console.log("[Dashboard:themeEffect] saving theme:", theme);
+    // console.log("[Dashboard:themeEffect] saving theme:", theme);
     localStorage.setItem("dashboard-theme", theme);
   }, [theme]);
 
   const hydrateDashboard = useCallback(
     async (range) => {
-      console.log("[Dashboard:hydrateDashboard] start:", {
-        range,
-        hasActiveToken: Boolean(activeToken),
-      });
+      // console.log("[Dashboard:hydrateDashboard] start:", {
+      //   range,
+      //   hasActiveToken: Boolean(activeToken),
+      // });
 
       if (!activeToken) {
         console.warn("[Dashboard:hydrateDashboard] Aborted: no activeToken");
@@ -114,12 +114,12 @@ const Dashboard = () => {
           dispatch(fetchStats(range)),
         ]);
 
-        console.log("[Dashboard:hydrateDashboard] Promise.all completed:", {
-          business: results[0]?.type,
-          doctors: results[1]?.type,
-          appointments: results[2]?.type,
-          stats: results[3]?.type,
-        });
+        // console.log("[Dashboard:hydrateDashboard] Promise.all completed:", {
+        //   business: results[0]?.type,
+        //   doctors: results[1]?.type,
+        //   appointments: results[2]?.type,
+        //   stats: results[3]?.type,
+        // });
       } catch (err) {
         console.error("[Dashboard:hydrateDashboard] Error:", err);
       }
@@ -128,12 +128,12 @@ const Dashboard = () => {
   );
 
   useEffect(() => {
-    console.log("[Dashboard:fetchEffect] running hydrateDashboard for range:", chartRange);
+    // console.log("[Dashboard:fetchEffect] running hydrateDashboard for range:", chartRange);
     hydrateDashboard(chartRange);
   }, [hydrateDashboard, chartRange]);
 
   const handleLogout = () => {
-    console.log("[Dashboard:handleLogout] Logging out");
+    // console.log("[Dashboard:handleLogout] Logging out");
     sessionStorage.removeItem("dashboard_once_after_entry");
     dispatch(logout());
     dispatch(clearBusiness());
@@ -150,7 +150,7 @@ const Dashboard = () => {
     : "";
 
   const copyLink = async () => {
-    console.log("[Dashboard:copyLink] bookingUrl:", bookingUrl);
+    // console.log("[Dashboard:copyLink] bookingUrl:", bookingUrl);
     if (!bookingUrl) {
       toast.error("Booking link is still loading...");
       return;
@@ -165,7 +165,7 @@ const Dashboard = () => {
   };
 
   const downloadQrPng = () => {
-    console.log("[Dashboard:downloadQrPng] start:", { bookingUrl, slug: business?.slug });
+    // console.log("[Dashboard:downloadQrPng] start:", { bookingUrl, slug: business?.slug });
     if (!bookingUrl) return;
     const svg = qrWrapperRef.current?.querySelector("svg");
     if (!svg) {
@@ -200,7 +200,7 @@ const Dashboard = () => {
         link.click();
 
         URL.revokeObjectURL(blobUrl);
-        console.log("[Dashboard:downloadQrPng] Downloaded successfully");
+        // console.log("[Dashboard:downloadQrPng] Downloaded successfully");
         toast.success("QR code downloaded!");
       } catch (err) {
         console.error("[Dashboard:downloadQrPng] Canvas error:", err);

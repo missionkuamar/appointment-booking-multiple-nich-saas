@@ -22,13 +22,13 @@ const Register = () => {
     try {
       const params = new URLSearchParams(location.search);
       const ref = params.get("ref")?.trim();
-      console.log("[Register] location.search:", location.search, "| extracted ref:", ref);
+      // console.log("[Register] location.search:", location.search, "| extracted ref:", ref);
 
       if (ref) {
         localStorage.setItem("affiliateRef", ref);
-        console.log("[Register] Saved affiliateRef to localStorage:", ref);
+        // console.log("[Register] Saved affiliateRef to localStorage:", ref);
       } else {
-        console.log("[Register] No ref in URL; existing localStorage affiliateRef:", localStorage.getItem("affiliateRef"));
+        // console.log("[Register] No ref in URL; existing localStorage affiliateRef:", localStorage.getItem("affiliateRef"));
       }
     } catch (error) {
       console.error("❌ Failed to save affiliate ref:", error);
@@ -44,7 +44,7 @@ const Register = () => {
       email: form.email,
       ref: affiliateRef,
     };
-    console.log("[Register] Submitting registration payload (password omitted):", payload);
+    // console.log("[Register] Submitting registration payload (password omitted):", payload);
 
     try {
       const result = await dispatch(
@@ -53,16 +53,16 @@ const Register = () => {
           ref: affiliateRef,
         })
       );
-      console.log("[Register] registerUser result:", result);
+      // console.log("[Register] registerUser result:", result);
 
       if (registerUser.fulfilled.match(result)) {
         if (affiliateRef) {
           localStorage.removeItem("affiliateRef");
-          console.log("[Register] Cleared affiliateRef from localStorage after registration");
+          // console.log("[Register] Cleared affiliateRef from localStorage after registration");
         }
 
         toast.success("Account created!");
-        console.log("[Register] Navigating to /onboarding");
+        // console.log("[Register] Navigating to /onboarding");
         navigate("/onboarding");
       } else {
         console.warn("[Register] Registration rejected/failed:", result.payload || result.error);

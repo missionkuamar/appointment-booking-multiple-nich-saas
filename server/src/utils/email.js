@@ -48,12 +48,12 @@ export const sendEmail = async ({ to, subject, text, html }) => {
   const activeTransporter = getTransporter();
 
   if (!activeTransporter) {
-    console.log("[email.js][DEV PREVIEW]", {
-      from,
-      to,
-      subject,
-      text,
-    });
+    // console.log("[email.js][DEV PREVIEW]", {
+    //   from,
+    //   to,
+    //   subject,
+    //   text,
+    // });
     return { previewOnly: true };
   }
 
@@ -65,11 +65,11 @@ export const sendEmail = async ({ to, subject, text, html }) => {
     html,
   });
 
-  console.log("[email.js] Email sent:", {
-    messageId: info.messageId,
-    to,
-    subject,
-  });
+  // console.log("[email.js] Email sent:", {
+  //   messageId: info.messageId,
+  //   to,
+  //   subject,
+  // });
 
   return info;
 };

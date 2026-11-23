@@ -5,10 +5,10 @@ import api from "../../api/axios";
 export const generateSlots = createAsyncThunk(
   "slot/generate",
   async (payload, { rejectWithValue }) => {
-    console.log("📡 [Thunk: generateSlots] POST /slots/generate | Payload:", payload);
+    // console.log("📡 [Thunk: generateSlots] POST /slots/generate | Payload:", payload);
     try {
       const { data } = await api.post("/slots/generate", payload);
-      console.log("✅ [Thunk: generateSlots] Response:", data);
+      // console.log("✅ [Thunk: generateSlots] Response:", data);
       return data;
     } catch (err) {
       console.error("❌ [Thunk: generateSlots] Error:", {
@@ -25,10 +25,10 @@ export const generateSlots = createAsyncThunk(
 export const fetchMySlots = createAsyncThunk(
   "slot/fetchMy",
   async (params = {}, { rejectWithValue }) => {
-    console.log("📡 [Thunk: fetchMySlots] GET /slots/my | Params:", params);
+    // console.log("📡 [Thunk: fetchMySlots] GET /slots/my | Params:", params);
     try {
       const { data } = await api.get("/slots/my", { params });
-      console.log("✅ [Thunk: fetchMySlots] Response:", data);
+      // console.log("✅ [Thunk: fetchMySlots] Response:", data);
       return data;
     } catch (err) {
       console.error("❌ [Thunk: fetchMySlots] Error:", {
@@ -45,10 +45,10 @@ export const fetchMySlots = createAsyncThunk(
 export const clearSlots = createAsyncThunk(
   "slot/clear",
   async (params = {}, { rejectWithValue }) => {
-    console.log("📡 [Thunk: clearSlots] DELETE /slots/clear | Params:", params);
+    // console.log("📡 [Thunk: clearSlots] DELETE /slots/clear | Params:", params);
     try {
       const { data } = await api.delete("/slots/clear", { params });
-      console.log("✅ [Thunk: clearSlots] Response:", data);
+      // console.log("✅ [Thunk: clearSlots] Response:", data);
       return data;
     } catch (err) {
       console.error("❌ [Thunk: clearSlots] Error:", {
@@ -75,12 +75,12 @@ const slotSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(generateSlots.pending, (state) => {
-        console.log("⏳ [Slice: slot] generateSlots.pending");
+        // console.log("⏳ [Slice: slot] generateSlots.pending");
         state.loading = true;
         state.error = null;
       })
       .addCase(generateSlots.fulfilled, (state, action) => {
-        console.log("🟢 [Slice: slot] generateSlots.fulfilled:", action.payload);
+        // console.log("🟢 [Slice: slot] generateSlots.fulfilled:", action.payload);
         state.loading = false;
       })
       .addCase(generateSlots.rejected, (state, action) => {
@@ -90,11 +90,11 @@ const slotSlice = createSlice({
       })
 
       .addCase(fetchMySlots.pending, (state) => {
-        console.log("⏳ [Slice: slot] fetchMySlots.pending");
+        // console.log("⏳ [Slice: slot] fetchMySlots.pending");
         state.loading = true;
       })
       .addCase(fetchMySlots.fulfilled, (state, action) => {
-        console.log("🟢 [Slice: slot] fetchMySlots.fulfilled:", action.payload);
+        // console.log("🟢 [Slice: slot] fetchMySlots.fulfilled:", action.payload);
         state.loading = false;
         state.slots = action.payload?.slots || [];
         state.grouped = action.payload?.grouped || {};
@@ -106,7 +106,7 @@ const slotSlice = createSlice({
       })
 
       .addCase(clearSlots.fulfilled, (state, action) => {
-        console.log("🟢 [Slice: slot] clearSlots.fulfilled:", action.payload);
+        // console.log("🟢 [Slice: slot] clearSlots.fulfilled:", action.payload);
         state.slots = [];
         state.grouped = {};
       })

@@ -14,7 +14,7 @@ export const razorpay = new Razorpay({
 
 export const initRazorpayPlans = async () => {
   try {
-    console.log("🔄 Initializing Razorpay Plans...");
+    // console.log("🔄 Initializing Razorpay Plans...");
     const existingPlans = await razorpay.plans.all({ count: 100 });
     const existingMap = {};
 
@@ -26,7 +26,7 @@ export const initRazorpayPlans = async () => {
       // Skip free / ₹0 plans because Razorpay does not allow ₹0 plans
       if (plan.isFree || !plan.price || plan.price <= 0) {
         PLANS[key].razorpayPlanId = null;
-        console.log(`⏭️ Skipping Razorpay plan for free tier: ${plan.name}`);
+        // console.log(`⏭️ Skipping Razorpay plan for free tier: ${plan.name}`);
         continue;
       }
 
@@ -34,9 +34,9 @@ export const initRazorpayPlans = async () => {
 
       if (existingMap[amountInPaise]) {
         PLANS[key].razorpayPlanId = existingMap[amountInPaise].id;
-        console.log(
-          `✅ Plan exists: ${plan.name} (${existingMap[amountInPaise].id})`
-        );
+        // console.log(
+        //   `✅ Plan exists: ${plan.name} (${existingMap[amountInPaise].id})`
+        // );
       } else {
         const newPlan = await razorpay.plans.create({
           period: plan.period,
@@ -49,11 +49,11 @@ export const initRazorpayPlans = async () => {
           },
         });
         PLANS[key].razorpayPlanId = newPlan.id;
-        console.log(`🚀 Plan created: ${plan.name} (${newPlan.id})`);
+        // console.log(`🚀 Plan created: ${plan.name} (${newPlan.id})`);
       }
     }
 
-    console.log("✅ All Razorpay Plans initialized!\n");
+    // console.log("✅ All Razorpay Plans initialized!\n");
   } catch (error) {
     console.error(
       "❌ Razorpay Plan init failed:",

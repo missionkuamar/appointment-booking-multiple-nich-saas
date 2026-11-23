@@ -207,11 +207,11 @@ export const getStats = async (req, res) => {
 // @desc    Update appointment
 // @route   PATCH /api/appointments/:id
 export const updateAppointment = async (req, res) => {
-  console.log("[updateAppointment] Request received:", {
-    userId: req.user?.id,
-    appointmentId: req.params.id,
-    body: req.body,
-  });
+  // console.log("[updateAppointment] Request received:", {
+  //   userId: req.user?.id,
+  //   appointmentId: req.params.id,
+  //   body: req.body,
+  // });
 
   try {
     const business = await Business.findOne({ ownerId: req.user.id });
@@ -219,7 +219,7 @@ export const updateAppointment = async (req, res) => {
       console.warn("[updateAppointment] Business not found for user:", req.user?.id);
       return res.status(404).json({ message: "Business not found" });
     }
-    console.log("[updateAppointment] Business found:", business._id);
+    // console.log("[updateAppointment] Business found:", business._id);
 
     const { status, notes } = req.body;
 
@@ -234,7 +234,7 @@ export const updateAppointment = async (req, res) => {
 
     const previousStatus = appt.status;
     const previousNotes = appt.notes;
-    console.log("[updateAppointment] Current appointment status:", previousStatus);
+    // console.log("[updateAppointment] Current appointment status:", previousStatus);
 
     if (status) {
       if (!isValidTransition(appt.status, status)) {
@@ -243,20 +243,20 @@ export const updateAppointment = async (req, res) => {
         });
       }
       appt.status = status;
-      console.log("[updateAppointment] Status updated to:", status);
+      // console.log("[updateAppointment] Status updated to:", status);
     }
 
     if (notes !== undefined) {
       appt.notes = notes;
-      console.log("[updateAppointment] Notes updated to:", notes);
+      // console.log("[updateAppointment] Notes updated to:", notes);
     }
 
     await appt.save();
-    console.log("[updateAppointment] Appointment saved:", appt._id);
+    // console.log("[updateAppointment] Appointment saved:", appt._id);
 
     if (["cancelled", "rejected", "no_show"].includes(status) && appt.slotId) {
       await Slot.findByIdAndUpdate(appt.slotId, { isBooked: false });
-      console.log("[updateAppointment] Slot released:", appt.slotId);
+      // console.log("[updateAppointment] Slot released:", appt.slotId);
     }
 
     const hasChange =
@@ -273,7 +273,7 @@ export const updateAppointment = async (req, res) => {
       })();
     }
 
-    console.log("[updateAppointment] Success response sent for appointment:", appt._id);
+    // console.log("[updateAppointment] Success response sent for appointment:", appt._id);
     res.json(appt);
   } catch (error) {
     console.error("[updateAppointment] Error:", error.message);

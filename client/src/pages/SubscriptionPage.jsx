@@ -44,7 +44,7 @@ const SubscriptionPage = () => {
   });
 
  const fetchSubscriptionHistory = async (targetPage = 1) => {
-  console.log("📡 [fetchSubscriptionHistory] Fetching history for page:", targetPage);
+  // console.log("📡 [fetchSubscriptionHistory] Fetching history for page:", targetPage);
   setHistoryLoading(true);
 
   try {
@@ -52,18 +52,18 @@ const SubscriptionPage = () => {
       params: { page: targetPage, limit: 10 },
     });
 
-    console.log("res hisitoer =  ", res);
-    console.log("📦 [fetchSubscriptionHistory] res.data:", res.data);
+    // console.log("res hisitoer =  ", res);
+    // console.log("📦 [fetchSubscriptionHistory] res.data:", res.data);
 
     const list = Array.isArray(res.data)
       ? res.data
       : res.data?.data || res.data?.history || [];
 
-    console.log("📋 [fetchSubscriptionHistory] Extracted list count:", list.length, list);
+    // console.log("📋 [fetchSubscriptionHistory] Extracted list count:", list.length, list);
     setHistory(list);
 
     if (res.data?.pagination) {
-      console.log("📄 [fetchSubscriptionHistory] Using server pagination:", res.data.pagination);
+      // console.log("📄 [fetchSubscriptionHistory] Using server pagination:", res.data.pagination);
       setHistoryPagination(res.data.pagination);
     } else {
       const fallbackPagination = {
@@ -72,7 +72,7 @@ const SubscriptionPage = () => {
         total: list.length,
         totalPages: Math.max(Math.ceil(list.length / 10), 1),
       };
-      console.log("📄 [fetchSubscriptionHistory] Using fallback pagination:", fallbackPagination);
+      // console.log("📄 [fetchSubscriptionHistory] Using fallback pagination:", fallbackPagination);
       setHistoryPagination(fallbackPagination);
     }
   } catch (err) {
@@ -81,12 +81,12 @@ const SubscriptionPage = () => {
     setHistory([]);
   } finally {
     setHistoryLoading(false);
-    console.log("🏁 [fetchSubscriptionHistory] Completed for page:", targetPage);
+    // console.log("🏁 [fetchSubscriptionHistory] Completed for page:", targetPage);
   }
 };
 
   useEffect(() => {
-    console.log("🔄 [SubscriptionPage] Fetching plans & subscription status...");
+    // console.log("🔄 [SubscriptionPage] Fetching plans & subscription status...");
     dispatch(fetchPlans());
     dispatch(fetchSubscriptionStatus());
   }, [dispatch]);
@@ -111,28 +111,28 @@ const SubscriptionPage = () => {
     normalizedStatus === "active" && currentPlanId !== "free";
 
   useEffect(() => {
-    console.log("📊 [SubscriptionPage] State:", {
-      plan,
-      currentPlanId,
-      status: normalizedStatus,
-      isPaidPlanActive,
-      loading,
-      plansCount: plans?.length || 0,
-      plans: plans?.map((pl) => ({ id: pl.id, _id: pl._id, name: pl.name, price: pl.price })),
-    });
+    // console.log("📊 [SubscriptionPage] State:", {
+    //   plan,
+    //   currentPlanId,
+    //   status: normalizedStatus,
+    //   isPaidPlanActive,
+    //   loading,
+    //   plansCount: plans?.length || 0,
+    //   plans: plans?.map((pl) => ({ id: pl.id, _id: pl._id, name: pl.name, price: pl.price })),
+    // });
   }, [plan, currentPlanId, normalizedStatus, isPaidPlanActive, loading, plans]);
 
   const handleSubscribe = async (planId) => {
     const cleanPlanId = String(planId || "").toLowerCase().trim();
-    console.log("🖱️ [SubscriptionPage] Subscribe clicked for:", cleanPlanId);
+    // console.log("🖱️ [SubscriptionPage] Subscribe clicked for:", cleanPlanId);
 
     if (!cleanPlanId || cleanPlanId === "free") {
-      console.log("ℹ️ [SubscriptionPage] Free plan clicked, skipping checkout");
+      // console.log("ℹ️ [SubscriptionPage] Free plan clicked, skipping checkout");
       return;
     }
 
     try {
-      console.log("🚀 [Frontend: handleSubscribe] Creating order for:", cleanPlanId);
+      // console.log("🚀 [Frontend: handleSubscribe] Creating order for:", cleanPlanId);
       const res = await dispatch(createSubscription(cleanPlanId));
       if (!createSubscription.fulfilled.match(res)) {
         console.error("❌ [Frontend: createSubscription failed]:", res.payload);
@@ -150,12 +150,12 @@ const SubscriptionPage = () => {
 
       const rzpKey = keyId || window.__RAZORPAY_KEY_ID__;
 
-      console.log("📦 [Frontend: handleSubscribe] Opening Razorpay modal:", {
-        orderId,
-        subscriptionId,
-        amount,
-        hasKeyId: !!rzpKey,
-      });
+      // console.log("📦 [Frontend: handleSubscribe] Opening Razorpay modal:", {
+      //   orderId,
+      //   subscriptionId,
+      //   amount,
+      //   hasKeyId: !!rzpKey,
+      // });
 
       if (!rzpKey) {
         return toast.error("Razorpay Key ID missing");
@@ -173,7 +173,7 @@ const SubscriptionPage = () => {
         name: "BookEasy",
         description: `${cleanPlanId.toUpperCase()} Plan Subscription`,
         handler: async (response) => {
-          console.log("✅ [Frontend: Razorpay handler] Payment response:", response);
+          // console.log("✅ [Frontend: Razorpay handler] Payment response:", response);
 
           const verifyRes = await dispatch(
             verifyPayment({

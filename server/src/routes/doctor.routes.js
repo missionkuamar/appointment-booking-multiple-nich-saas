@@ -11,10 +11,10 @@ const router = express.Router();
 
 // 1. Incoming request ko protect middleware se pehle log karne ke liye
 router.use((req, res, next) => {
-  console.log(`\n📥 [Doctor Route Incoming] ${req.method} ${req.originalUrl}`);
-  console.log("🔑 [Headers Auth]:", req.headers.authorization ? "Token Present" : "No Token");
-  console.log("📦 [Body]:", req.body);
-  console.log("🆔 [Params]:", req.params);
+  // console.log(`\n📥 [Doctor Route Incoming] ${req.method} ${req.originalUrl}`);
+  // console.log("🔑 [Headers Auth]:", req.headers.authorization ? "Token Present" : "No Token");
+  // console.log("📦 [Body]:", req.body);
+  // console.log("🆔 [Params]:", req.params);
   next();
 });
 
@@ -23,7 +23,7 @@ router.use(protect);
 
 // 2. Protect middleware pass hone ke baad user verify karne ke liye
 router.use((req, res, next) => {
-  console.log("✅ [Auth Passed] User ID:", req.user?._id || req.user?.id, "| Role:", req.user?.role);
+  // console.log("✅ [Auth Passed] User ID:", req.user?._id || req.user?.id, "| Role:", req.user?.role);
   next();
 });
 
@@ -31,22 +31,22 @@ router.use((req, res, next) => {
 router
   .route("/")
   .post((req, res, next) => {
-    console.log("➡️ [Route Hit] POST / -> addDoctor");
+    // console.log("➡️ [Route Hit] POST / -> addDoctor");
     next();
   }, addDoctor)
   .get((req, res, next) => {
-    console.log("➡️ [Route Hit] GET / -> getMyDoctors");
+    // console.log("➡️ [Route Hit] GET / -> getMyDoctors");
     next();
   }, getMyDoctors);
 
 router
   .route("/:id")
   .patch((req, res, next) => {
-    console.log(`➡️ [Route Hit] PATCH /${req.params.id} -> updateDoctor`);
+    // console.log(`➡️ [Route Hit] PATCH /${req.params.id} -> updateDoctor`);
     next();
   }, updateDoctor)
   .delete((req, res, next) => {
-    console.log(`➡️ [Route Hit] DELETE /${req.params.id} -> deleteDoctor`);
+    // console.log(`➡️ [Route Hit] DELETE /${req.params.id} -> deleteDoctor`);
     next();
   }, deleteDoctor);
 

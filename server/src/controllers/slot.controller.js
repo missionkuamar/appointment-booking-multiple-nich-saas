@@ -205,7 +205,7 @@ export const generateSlots = async (req, res) => {
 export const generateMySlots = async (req, res) => {
   try {
     const doctor = await Doctor.findOne({ userId: req.user.id });
-    console.log("generate ", doctor)
+    // console.log("generate ", doctor)
     if (!doctor) {
       return res.status(404).json({ message: "Doctor profile not found" });
     }
@@ -472,8 +472,8 @@ export const generateDoctorSlots = async (req, res) => {
 // @desc    Get doctor's own schedule for a specific date
 // @route   GET /api/slots/my-schedule
 export const getDoctorSchedule = async (req, res) => {
-  console.log("\n========== 🚀 GET DOCTOR SCHEDULE START ==========");
-  console.log("📥 [getDoctorSchedule] Query:", req.query, "| User:", req.user?._id || req.user?.id);
+  // console.log("\n========== 🚀 GET DOCTOR SCHEDULE START ==========");
+  // console.log("📥 [getDoctorSchedule] Query:", req.query, "| User:", req.user?._id || req.user?.id);
 
   try {
     const userId = req.user?._id || req.user?.id;
@@ -484,7 +484,7 @@ export const getDoctorSchedule = async (req, res) => {
       console.warn("⚠️ [getDoctorSchedule] Doctor profile not found for userId:", userId);
       return res.status(404).json({ message: "Doctor profile not found" });
     }
-    console.log("✅ [getDoctorSchedule] Doctor Found:", doctor.name, "| ID:", doctor._id);
+    // console.log("✅ [getDoctorSchedule] Doctor Found:", doctor.name, "| ID:", doctor._id);
 
     // 2. Aaj ki local date aur future ke saare available dates nikalo
     const today = new Date();
@@ -497,7 +497,7 @@ export const getDoctorSchedule = async (req, res) => {
       isBlocked: false,
     });
     availableDates.sort();
-    console.log("📅 [getDoctorSchedule] Doctor's Available Dates:", availableDates);
+    // console.log("📅 [getDoctorSchedule] Doctor's Available Dates:", availableDates);
 
     // 3. Agar query mein date nahi aayi, to aaj ki date ya next available date select karo
     let targetDate = req.query.date;
@@ -505,7 +505,7 @@ export const getDoctorSchedule = async (req, res) => {
       targetDate = availableDates.includes(todayStr)
         ? todayStr
         : availableDates[0] || todayStr;
-      console.log("🎯 [getDoctorSchedule] Auto-selected targetDate:", targetDate);
+      // console.log("🎯 [getDoctorSchedule] Auto-selected targetDate:", targetDate);
     }
 
     // 4. Get all slots for targetDate
@@ -514,7 +514,7 @@ export const getDoctorSchedule = async (req, res) => {
       date: targetDate,
       isBlocked: false,
     }).sort({ startTime: 1 });
-    console.log(`📦 [getDoctorSchedule] Slots found for ${targetDate}:`, slots.length);
+    // console.log(`📦 [getDoctorSchedule] Slots found for ${targetDate}:`, slots.length);
 
     // 5. Fetch appointments for these slots
     const appointments = await Appointment.find({
@@ -522,7 +522,7 @@ export const getDoctorSchedule = async (req, res) => {
       date: targetDate,
       status: { $ne: "cancelled" },
     });
-    console.log(`📋 [getDoctorSchedule] Appointments found for ${targetDate}:`, appointments.length);
+    // console.log(`📋 [getDoctorSchedule] Appointments found for ${targetDate}:`, appointments.length);
 
     // 6. Map appointments to slots
     const schedule = slots.map((slot) => {
@@ -547,7 +547,7 @@ export const getDoctorSchedule = async (req, res) => {
       };
     });
 
-    console.log("========== 🏁 GET DOCTOR SCHEDULE END ==========\n");
+    // console.log("========== 🏁 GET DOCTOR SCHEDULE END ==========\n");
 
     res.json({
       doctor: {
