@@ -17,6 +17,17 @@ const Navbar = ({ theme, setTheme, user, handleLogout }) => {
     setTheme(nextTheme);
   };
 
+  const formatUserName = (rawName) => {
+  if (!rawName) return "";
+  return rawName
+    .replace(/^\s*dr\.?\s+/i, "") // शुरू का "Dr." या "dr." हटाता है
+    .trim()
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
+  console.log("user name:", user)
   const nextThemeLabel =
     themeOrder[(themeOrder.indexOf(theme) + 1) % themeOrder.length] || "day";
 
@@ -52,9 +63,9 @@ const Navbar = ({ theme, setTheme, user, handleLogout }) => {
           </button>
 
           {/* User Name */}
-          <span className={`hidden md:block text-sm font-medium ${t.text}`}>
-            {user?.name}
-          </span>
+         <span className={`hidden md:block text-sm font-medium ${t.text}`}>
+  {formatUserName(user?.name)}
+</span>
 
           {/* Logout Button */}
           <button

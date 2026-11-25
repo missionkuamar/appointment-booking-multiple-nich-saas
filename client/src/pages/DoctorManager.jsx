@@ -116,7 +116,7 @@ export default function DoctorManager() {
     e.preventDefault();
 
     if (!form.name || !form.specialization) {
-      toast.error("Doctor ka naam aur specialization zaroori hai!");
+      toast.error("Staff ka naam aur specialization zaroori hai! Nhi tho kuch bhi likh do ");
       return;
     }
 
@@ -128,7 +128,7 @@ export default function DoctorManager() {
     if (editingId) {
       const res = await dispatch(updateDoctor({ id: editingId, ...form }));
       if (updateDoctor.fulfilled.match(res)) {
-        toast.success("Doctor updated!");
+        toast.success("Staff updated!");
         resetForm();
       } else {
         toast.error(res.payload || "Update failed");
@@ -136,10 +136,10 @@ export default function DoctorManager() {
     } else {
       const res = await dispatch(addDoctor(form));
       if (addDoctor.fulfilled.match(res)) {
-        toast.success("Doctor added!");
+        toast.success("Staff added!");
         resetForm();
       } else {
-        toast.error(res.payload || "Failed to add doctor");
+        toast.error(res.payload || "Failed to add Staff");
       }
     }
   };
@@ -186,7 +186,7 @@ export default function DoctorManager() {
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
               <h1 className={`text-2xl font-bold ${t.text}`}>
-                Doctors Management
+                Staff Management
               </h1>
               <span
                 className={`text-xs px-2.5 py-1 rounded-full font-bold uppercase ${
@@ -199,7 +199,7 @@ export default function DoctorManager() {
               </span>
             </div>
             <p className={`text-sm mt-1 ${t.muted}`}>
-              Add doctors and configure their Week 1 to Week 4 schedules
+              Add Staff and configure their Week 1 to Week 4 schedules
             </p>
           </div>
 
@@ -223,7 +223,7 @@ export default function DoctorManager() {
                 showForm ? "bg-red-500" : t.accent
               } text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:opacity-90 transition`}
             >
-              {showForm ? "Cancel" : "+ Add Doctor"}
+              {showForm ? "Cancel" : "+ Add Staff"}
             </button>
           </div>
         </div>
@@ -235,17 +235,17 @@ export default function DoctorManager() {
             className={`rounded-2xl border ${t.card} ${t.border} p-5 md:p-6 mb-6 space-y-5`}
           >
             <h2 className={`text-lg font-bold ${t.text}`}>
-              {editingId ? "Edit Doctor Details" : "Add New Doctor"}
+              {editingId ? "Edit Staff Details" : "Add New Staff"}
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={`block text-xs font-semibold mb-1 ${t.muted}`}>
-                  Doctor Name *
+                  Staff Name *
                 </label>
                 <input
                   type="text"
-                  placeholder="Dr. Rahul Sharma"
+                  placeholder="Mr Rahul Sharma"
                   className={`w-full p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm outline-none`}
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -259,7 +259,7 @@ export default function DoctorManager() {
                 </label>
                 <input
                   type="email"
-                  placeholder="doctor@clinic.com"
+                  placeholder="your@gmail.com"
                   className={`w-full p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm outline-none disabled:opacity-60`}
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -292,7 +292,7 @@ export default function DoctorManager() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Cardiologist, Dentist, etc."
+                  placeholder="Cardiologist, or Put any thing"
                   className={`w-full p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm outline-none`}
                   value={form.specialization}
                   onChange={(e) =>
@@ -308,7 +308,7 @@ export default function DoctorManager() {
                 </label>
                 <input
                   type="text"
-                  placeholder="MBBS, MD"
+                  placeholder="MBBS , Put any things"
                   className={`w-full p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm outline-none`}
                   value={form.qualification}
                   onChange={(e) =>
@@ -323,7 +323,7 @@ export default function DoctorManager() {
                 </label>
                 <input
                   type="number"
-                  placeholder="500"
+                  placeholder="Please Enter Staff Amount"
                   className={`w-full p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm outline-none`}
                   value={form.consultationFee}
                   onChange={(e) =>
@@ -478,7 +478,7 @@ export default function DoctorManager() {
               type="submit"
               className={`w-full ${t.accent} text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition`}
             >
-              {editingId ? "Update Doctor" : "Save Doctor"}
+              {editingId ? "Update Staff" : "Save Staff"}
             </button>
           </form>
         )}
@@ -486,13 +486,13 @@ export default function DoctorManager() {
         {/* Doctors List */}
         {loading ? (
           <p className={`text-center py-10 text-sm ${t.muted}`}>
-            Loading doctors...
+            Loading Staff...
           </p>
         ) : list.length === 0 ? (
           <div
             className={`rounded-2xl border ${t.card} ${t.border} p-10 text-center`}
           >
-            <p className={`font-medium ${t.muted}`}>No doctors added yet.</p>
+            <p className={`font-medium ${t.muted}`}>No Staff added yet.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

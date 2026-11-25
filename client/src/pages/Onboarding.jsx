@@ -5,7 +5,7 @@ import { saveBusiness } from "../features/business/businessSlice";
 import toast from "react-hot-toast";
 
 const industries = [
-  { value: "clinic", label: "🏥 Clinic / Doctor", placeholder: "e.g. Sharma Clinic" },
+  { value: "clinic", label: "🏥 Welcome sir/mam", placeholder: "e.g. Sharma Clinic.. or other" },
   // { value: "salon", label: "💇 Salon / Spa", placeholder: "e.g. Glamour Studio" },
   // { value: "tutor", label: "📚 Tutor / Coaching", placeholder: "e.g. Maths Academy" },
   // { value: "physio", label: "🦴 Physiotherapy", placeholder: "e.g. Care Physio" },

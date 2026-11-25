@@ -71,7 +71,7 @@ const SlotManager = () => {
 
   const handleGenerate = async () => {
     if (!selectedDoctorId) {
-      return toast.error("Pehle Doctor select karo!");
+      return toast.error("Pehle Staff select karo!");
     }
     if (!form.days.length) {
       return toast.error("Kam se kam ek din select karo");
@@ -90,9 +90,9 @@ const SlotManager = () => {
 
   const handleClear = async () => {
     if (!selectedDoctorId) {
-      return toast.error("Pehle Doctor select karo!");
+      return toast.error("Pehle Staff select karo!");
     }
-    if (!window.confirm("Is doctor ke saare unbooked future slots delete karne hain?")) {
+    if (!window.confirm("Is Staff ke saare unbooked future slots delete karne hain?")) {
       return;
     }
 
@@ -126,7 +126,7 @@ const SlotManager = () => {
           <div>
             <h1 className={`text-2xl font-bold ${t.text}`}>Slot Manager</h1>
             <p className={`text-sm ${t.muted}`}>
-              Generate week-wise slots for doctors (Week 1 to Week 12)
+              Generate week-wise slots for Staff (Week 1 to Week 12)
             </p>
           </div>
           <Link
@@ -147,14 +147,14 @@ const SlotManager = () => {
         {/* Doctor Selector */}
         <div className={`p-5 md:p-6 rounded-2xl border ${t.card} ${t.border} mb-6`}>
           <label className={`block text-sm font-bold mb-2 ${t.text}`}>
-            Select Doctor to Manage Slots
+            Select Staff to Manage Slots
           </label>
           <select
             value={selectedDoctorId}
             onChange={(e) => setSelectedDoctorId(e.target.value)}
             className={`w-full px-4 py-3 rounded-xl border ${t.border} ${t.soft} ${t.text} text-sm font-medium outline-none`}
           >
-            <option value="">-- Choose Doctor --</option>
+            <option value="">-- Choose Staff --</option>
             {doctors.map((doc) => (
               <option key={doc._id} value={doc._id}>
                 {doc.name} ({doc.specialization || "General"})
@@ -164,11 +164,11 @@ const SlotManager = () => {
 
           {doctors.length === 0 && (
             <p className="text-sm text-red-500 mt-2">
-              Koi doctor nahi mila. Pehle{" "}
+              Koi Staff nahi mila. Pehle{" "}
               <Link to="/doctors" className={`underline font-semibold ${t.accentText}`}>
-                Doctors page
+                Staff banaye 
               </Link>{" "}
-              se doctor add karo.
+              se Staff Manage se add karo.
             </p>
           )}
         </div>
@@ -310,12 +310,12 @@ const SlotManager = () => {
         {selectedDoctorId && (
           <div className={`p-5 md:p-6 rounded-2xl border ${t.card} ${t.border}`}>
             <h2 className={`text-lg font-bold mb-4 ${t.text}`}>
-              Doctor's Slots ({slots.length})
+              Staff's Slots ({slots.length})
             </h2>
 
             {sortedDates.length === 0 ? (
               <p className={`text-center py-8 text-sm ${t.muted}`}>
-                Is doctor ke abhi koi slots nahi hain. Upar se generate karo.
+                Is Staff ke abhi koi slots nahi hain. Upar se generate karo.
               </p>
             ) : (
               <div className="space-y-4">

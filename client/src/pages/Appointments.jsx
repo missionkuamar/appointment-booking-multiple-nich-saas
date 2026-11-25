@@ -140,13 +140,13 @@ const Appointments = () => {
 
           {/* Doctor Selector */}
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <span className={`text-xs font-semibold ${t.muted}`}>Doctor:</span>
+            <span className={`text-xs font-semibold ${t.muted}`}>Staff:</span>
             <select
               value={doctorFilter}
               onChange={handleDoctorChangeFilter}
               className={`p-2.5 rounded-xl border ${t.border} ${t.soft} ${t.text} text-xs font-medium outline-none w-full md:w-48`}
             >
-              <option value="">All Doctors</option>
+              <option value="">All Staff</option>
               {doctors.map((doc) => (
                 <option key={doc._id} value={doc._id}>
                   {doc.name}

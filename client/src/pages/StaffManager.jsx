@@ -179,14 +179,14 @@ const StaffManager = () => {
             >
               ← Dashboard
             </Link>
-            <button
+            {/* <button
               onClick={() => setShowForm(!showForm)}
               className={`px-4 py-2.5 ${
                 showForm ? "bg-red-500" : t.accent
               } text-white rounded-xl text-xs font-bold hover:opacity-90 transition`}
             >
               {showForm ? "Cancel" : "+ Add Staff"}
-            </button>
+            </button> */}
           </div>
         </div>
 

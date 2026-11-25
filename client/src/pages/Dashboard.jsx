@@ -241,7 +241,7 @@ const Dashboard = () => {
     {
       to: "/doctors",
       icon: "🩺",
-      title: "Doctors",
+      title: "Staff Manage",
       desc: `${Array.isArray(doctors) ? doctors.length : 0} active`,
     },
     {
